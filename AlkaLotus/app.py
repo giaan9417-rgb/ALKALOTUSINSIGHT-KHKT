@@ -174,7 +174,7 @@ if page == "1. Thư viện Alkaloid":
         **Các bước thực hiện:**
         1. **Lọc dữ liệu:** Sử dụng bộ lọc Lipinski để chọn ra các chất có khả năng làm thuốc cao nhất.
         2. **Quan sát Heatmap:** Tìm các ô màu hồng đậm - đó là các chất có ái lực liên kết mạnh nhất với Enzyme.
-        3. **Chọn chất:** Chọn 1 hợp chất cụ thể để hệ thống ghi nhớ và phân tích sâu ở Module 2, 3, 4.
+        3. **Chọn chất:** Chọn 1 hợp chất cụ thể để hệ thống ghi nhớ và phân tích sâu ở Module sau.
         """)
 
     if 'MW' in df.columns:
@@ -248,7 +248,7 @@ if page == "1. Thư viện Alkaloid":
         
     current_idx = compounds.index(st.session_state.selected_compound)
     
-    choice = st.selectbox("Chọn hợp chất để chuyển tiếp dữ liệu sang Module 3D và AI:", 
+    choice = st.selectbox("Chọn hợp chất để chuyển tiếp dữ liệu sang Module sau:", 
                           compounds, index=current_idx)
     
     if choice != st.session_state.selected_compound:
