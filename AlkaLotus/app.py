@@ -110,25 +110,21 @@ if 'selected_compound' not in st.session_state:
     st.session_state.selected_compound = "Roemerine"
 
 # --- 5. SIDEBAR ---
+# --- 5. SIDEBAR ---
 st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 
-logo_paths = [
-    "AlkaLotus/Logo_HungVuong.png.png", 
-    "Logo_HungVuong.png.png",
-    "AlkaLotus/Logo_HungVuong.png",
-    "Logo_HungVuong.png"
-]
+# Chỉ định đường dẫn tới logo mới của dự án
+logo_path = "Logo Alkalotus Insight.png"
 
-logo_found = False
-for path in logo_paths:
-    if os.path.exists(path):
-        st.sidebar.image(path, width=130)
-        logo_found = True
-        break
-
-if not logo_found:
-    github_logo_url = "https://raw.githubusercontent.com/giaan9417-rgb/AlkaLotus-Predictor/main/AlkaLotus/Logo_HungVuong.png.png"
+if os.path.exists(logo_path):
+    st.sidebar.image(logo_path, width=130)
+else:
+    # Dự phòng URL trên GitHub nếu không tìm thấy tệp cục bộ
+    github_logo_url = "https://raw.githubusercontent.com/giaan9417-rgb/AlkaLotus-Predictor/main/Logo Alkalotus Insight.png"
     st.sidebar.image(github_logo_url, width=130)
+
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
+st.sidebar.divider()
 
 st.sidebar.markdown(
     """
