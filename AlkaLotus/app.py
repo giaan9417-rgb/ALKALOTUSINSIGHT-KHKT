@@ -115,11 +115,11 @@ st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 logo_path = "logo.png"
 
 if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, width=130)
+    # Thêm tham số use_container_width=True hoặc bỏ qua các biến thừa
+    st.sidebar.image(logo_path, width=120)
 else:
-    # Dự phòng tải trực tiếp từ GitHub nếu chưa đồng bộ tệp cục bộ
-    github_logo_url = "https://raw.githubusercontent.com/giaan9417-rgb/AlkaLotus-Predictor/main/AlkaLotus/logo.png"
-    st.sidebar.image(github_logo_url, width=130)
+    # Nếu không tìm thấy file local thì dùng icon thay thế tạm thời để không bị vỡ giao diện
+    st.sidebar.markdown("<h1 style='text-align: center;'>🪷</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("</div>", unsafe_allow_html=True)
 st.sidebar.divider()
