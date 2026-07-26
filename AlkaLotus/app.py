@@ -112,13 +112,14 @@ if 'selected_compound' not in st.session_state:
 # --- 5. SIDEBAR ---
 st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 
-# Trỏ ra thư mục cha vì app.py nằm trong thư mục con AlkaLotus/
-logo_path = "../Logo Alkalotus Insight.png"
+logo_path = "logo.png"
 
 if os.path.exists(logo_path):
     st.sidebar.image(logo_path, width=130)
 else:
-    st.sidebar.error("Không tìm thấy tệp logo trong thư mục!")
+    # Dự phòng dùng URL trực tiếp từ GitHub nếu cần
+    github_logo_url = "https://raw.githubusercontent.com/giaan9417-rgb/AlkaLotus-Predictor/main/AlkaLotus/logo.png"
+    st.sidebar.image(github_logo_url, width=130)
 
 st.sidebar.markdown("</div>", unsafe_allow_html=True)
 st.sidebar.divider()
