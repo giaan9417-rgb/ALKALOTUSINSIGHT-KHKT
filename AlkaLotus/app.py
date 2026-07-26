@@ -112,14 +112,15 @@ if 'selected_compound' not in st.session_state:
 # --- 5. SIDEBAR ---
 st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 
-logo_path = "Logo Alkalotus Insight.png"  
+# Trỏ ra thư mục cha vì app.py nằm trong thư mục con AlkaLotus/
+logo_path = "../Logo Alkalotus Insight.png"
 
 if os.path.exists(logo_path):
     st.sidebar.image(logo_path, width=130)
 else:
-    st.sidebar.error(f"Không tìm thấy tệp '{Logo Alkalotus Insight.png}' trong thư mục!")
+    st.sidebar.error("Không tìm thấy tệp logo trong thư mục!")
 
-st.sidebar.markdown("</div>", unsafe_image_allow=True)
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
 st.sidebar.divider()
 
 st.sidebar.markdown(
