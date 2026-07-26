@@ -117,7 +117,7 @@ logo_path = "logo.png"
 if os.path.exists(logo_path):
     st.sidebar.image(logo_path, width=130)
 else:
-    # Dự phòng dùng URL trực tiếp từ GitHub nếu cần
+    # Dự phòng tải trực tiếp từ GitHub nếu chưa đồng bộ tệp cục bộ
     github_logo_url = "https://raw.githubusercontent.com/giaan9417-rgb/AlkaLotus-Predictor/main/AlkaLotus/logo.png"
     st.sidebar.image(github_logo_url, width=130)
 
