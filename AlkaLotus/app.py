@@ -112,14 +112,17 @@ if 'selected_compound' not in st.session_state:
 # --- 5. SIDEBAR ---
 st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 
-logo_path = "logo.png"
+logo_path = "AlkaLotus/logo.png"
 
 if os.path.exists(logo_path):
-    # Thêm tham số use_container_width=True hoặc bỏ qua các biến thừa
-    st.sidebar.image(logo_path, width=120)
+    st.sidebar.image(logo_path, width=130)
 else:
-    # Nếu không tìm thấy file local thì dùng icon thay thế tạm thời để không bị vỡ giao diện
-    st.sidebar.markdown("<h1 style='text-align: center;'>🪷</h1>", unsafe_allow_html=True)
+    # Dự phòng nếu chạy từ bên trong thư mục AlkaLotus/
+    alt_path = "logo.png"
+    if os.path.exists(alt_path):
+        st.sidebar.image(alt_path, width=130)
+    else:
+        st.sidebar.error("Không tìm thấy tệp logo!")
 
 st.sidebar.markdown("</div>", unsafe_allow_html=True)
 st.sidebar.divider()
