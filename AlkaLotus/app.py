@@ -110,15 +110,14 @@ if 'selected_compound' not in st.session_state:
     st.session_state.selected_compound = "Roemerine"
 
 # --- 5. SIDEBAR ---
-# --- 5. SIDEBAR ---
 st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 
-logo_path = "logo.png"  # Hoặc "Logo Alkalotus Insight.png"
+logo_path = "Logo Alkalotus Insight.png"  
 
 if os.path.exists(logo_path):
     st.sidebar.image(logo_path, width=130)
 else:
-    st.sidebar.error(f"Không tìm thấy tệp '{logo_path}' trong thư mục!")
+    st.sidebar.error(f"Không tìm thấy tệp '{Logo Alkalotus Insight.png}' trong thư mục!")
 
 st.sidebar.markdown("</div>", unsafe_image_allow=True)
 st.sidebar.divider()
