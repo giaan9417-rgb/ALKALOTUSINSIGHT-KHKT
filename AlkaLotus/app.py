@@ -132,7 +132,7 @@ st.sidebar.markdown(
     <p style='font-size: 1em; font-weight: bold; color: #2E2E2E; margin-top: 5px; margin-bottom: 0px;'>
         ALKALOTUS INSIGHT
     </p>
-    <p style='font-size: 0.8em; color: #666;'>DỰ ÁN NGHIÊN CỨU KHOA HỌC</p>
+    <p style='font-size: 0.8em; color: #666;'>DỰ ÁN NGHIÊN CỨU KHOA HỌC NỀN TẢNG TIN SINH HỌC</p>
     """, 
     unsafe_allow_html=True
 )
