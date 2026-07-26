@@ -115,7 +115,7 @@ st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 logo_path = "AlkaLotus/logo.png"
 
 if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, width=200)
+    st.sidebar.image(logo_path, width=250)
 else:
     # Dự phòng nếu chạy từ bên trong thư mục AlkaLotus/
     alt_path = "logo.png"
