@@ -158,8 +158,8 @@ page = st.sidebar.radio(
     ]
 )
 st.sidebar.divider()
-st.sidebar.caption("👨‍ Học sinh: **Quách Gia An & Nguyễn Lê Bách Hợp**")
-st.sidebar.caption("🏫 Đơn vị: **Lớp 10-K30 - THPT Chuyên Hùng Vương**")
+st.sidebar.caption("👨‍ Học sinh: **Quách Gia An**")
+st.sidebar.caption("🏫 Đơn vị: **Chuyên sử Khóa 30 - THPT Chuyên Hùng Vương**")
 
 # --- 6. MODULE 1: DATABASE EXPLORER (BẢN NÂNG CẤP) ---
 if page == "1. Thư viện Alkaloid":
@@ -422,8 +422,8 @@ if page == "3. Phân tích & Xuất báo cáo":
              BÁO CÁO PHÂN TÍCH DƯỢC TÍNH PHÂN TỬ - ALKALOTUS PREDICTOR
 ======================================================================
 Dự án: Nghiên cứu In Silico dẫn xuất Alkaloid từ lá sen điều trị Alzheimer
-Tác giả: Quách Gia An - Nguyễn Lê Bách Hợp
-Đơn vị: Lớp 10-K30 - Trường THPT Chuyên Hùng Vương
+Tác giả: Quách Gia An
+Đơn vị: Lớp 10 chuyên Sử khóa 30 - Trường THPT Chuyên Hùng Vương
 Thời gian trích xuất: {current_time}
 
 ----------------------------------------------------------------------
