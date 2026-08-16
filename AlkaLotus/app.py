@@ -686,7 +686,7 @@ elif page == "6. Động học Chiết tách (Toán)":
     })
     # Hiển thị bảng với format số thập phân gọn gàng
     st.dataframe(df_display.style.format({"Nồng độ (mg/g)": "{:.4f}"}), use_container_width=True)
-    # --- MODULE 7: DỰ TOÁN QUY MÔ & KINH TẾ (TOÁN) ---
+   # --- MODULE 7: DỰ TOÁN QUY MÔ & KINH TẾ (TOÁN) ---
 elif page == "7. Dự toán Quy mô & Kinh tế (Toán)":
     with st.sidebar:
         st.header("📖 Hướng dẫn Module 7")
@@ -711,33 +711,34 @@ elif page == "7. Dự toán Quy mô & Kinh tế (Toán)":
 
     with col_in2:
         st.subheader("Thông số Giới hạn Vận hành")
+        
         scale_leaf = st.slider("Khoảng quy mô mẻ chiết (kg lá)", 1, 50, (1, 50))
+        st.caption("📌 **Quy mô mẻ:** Giới hạn khối lượng nguyên liệu lá sen khô đầu vào cho một lần chiết xuất, giúp thuật toán tìm ra giá trị phù hợp với công suất thiết bị thực tế.")
+        
         vol_solvent = st.slider("Khoảng thể tích dung môi (Lít)", 10, 200, (10, 200))
+        st.caption("📌 **Thể tích dung môi:** Khoảng giới hạn lượng dung môi cấp vào bình. Thông số này trực tiếp chi phối chi phí dung môi và điện năng tiêu thụ cho hệ thống khuấy/gia nhiệt.")
+        
         recovery_eff = st.slider("Hiệu suất thu hồi trung bình (%)", 0.5, 2.0, 1.2, step=0.1)
+        st.caption("📌 **Hiệu suất thu hồi:** Tỷ lệ phần trăm chuyển hóa hoạt chất từ nguyên liệu thô ra dung dịch, dùng làm hệ số quy đổi để dự báo hàm lượng (mg) thu được.")
 
     st.divider()
     st.subheader("⚙️ Tối ưu hóa tự động bằng Scipy")
     
     if st.button("🚀 Chạy thuật toán tối ưu hóa kinh tế"):
-        # Hàm mục tiêu chi phí: Cost = m_leaf * P_leaf + V_sol * P_sol + Energy * P_elec
         def objective(x):
             m, v = x
-            # Giả định tiêu thụ điện năng tương quan tuyến tính với thể tích dung môi khuấy trộn
             elec_kwh = v * 0.15 
             total_cost = m * price_leaf + v * price_solvent + elec_kwh * price_elec
-            # Lợi nhuận giả định dựa trên khối lượng hoạt chất thu được (càng cao càng tốt -> tối ưu hóa minimize âm lợi nhuận hoặc tối thiểu chi phí quy đổi)
             return total_cost
 
-        # Ràng buộc
         bounds = [scale_leaf, vol_solvent]
         
-        # Chạy thuật toán tối ưu
         res = minimize(objective, x0=[(scale_leaf[0]+scale_leaf[1])/2, (vol_solvent[0]+vol_solvent[1])/2], bounds=bounds, method='L-BFGS-B')
         
         if res.success:
             opt_m, opt_v = res.x
             opt_cost = res.fun
-            est_output_mg = opt_m * recovery_eff * 15 # Giả định trung bình 15mg hoạt chất/kg lá
+            est_output_mg = opt_m * recovery_eff * 15 
             
             st.success("🎉 Tối ưu hóa thành công!")
             
