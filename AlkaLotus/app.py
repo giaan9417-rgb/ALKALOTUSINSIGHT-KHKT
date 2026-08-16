@@ -699,7 +699,7 @@ elif page == "7. Dự toán Quy mô & Kinh tế (Toán)":
         3. **Chạy tối ưu hóa:** Sử dụng thuật toán Scipy để tìm ra thông số cấu hình mang lại chi phí thấp nhất và lợi nhuận cao nhất.
         """)
         
-    st.title("7. Dự toán Quy mô & Kinh tế & Tối ưu hóa (Toán)")
+    st.title("7. Dự toán Quy mô & Kinh tế (Toán)")
     st.markdown("Mô phỏng và tự động tối ưu hóa chi phí sản xuất hoạt chất Alkaloid từ lá sen bằng thuật toán toán học.")
 
     col_in1, col_in2 = st.columns(2)
