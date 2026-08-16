@@ -685,3 +685,95 @@ elif page == "6. Động học Chiết tách (Toán)":
     })
     # Hiển thị bảng với format số thập phân gọn gàng
     st.dataframe(df_display.style.format({"Nồng độ (mg/g)": "{:.4f}"}), use_container_width=True)
+    import streamlit as st
+import pandas as pd
+import plotly.express as px
+from scipy.optimize import minimize
+
+def show_module_7():
+    st.header("7. Dự toán Quy mô & Kinh tế & Tối ưu hóa (Toán)")
+    st.markdown("Mô phỏng và tự động tối ưu hóa chi phí sản xuất hoạt chất Alkaloid từ lá sen bằng thuật toán toán học.")
+
+    # Chia cột cho giao diện nhập liệu
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Thông số Đầu vào (Thị trường)")
+        gia_la_sen = st.number_input("Giá lá sen khô (VNĐ/kg)", value=50000, step=5000)
+        gia_dung_moi = st.number_input("Giá dung môi tối ưu (VNĐ/Lít)", value=35000, step=1000)
+        gia_dien = st.number_input("Giá điện (VNĐ/kWh)", value=2500, step=100)
+
+    with col2:
+        st.subheader("Thông số Giới hạn Vận hành")
+        min_khoi_luong, max_khoi_luong = st.slider("Khoảng quy mô mẻ chiết (kg lá)", 1, 200, (1, 50))
+        min_the_tich, max_the_tich = st.slider("Khoảng thể tích dung môi (Lít)", 5, 1000, (10, 200))
+        hieu_suat = st.slider("Hiệu suất thu hồi trung bình (%)", 0.1, 5.0, 1.2)
+
+    st.divider()
+    st.subheader("🤖 Tối ưu hóa tự động bằng Scipy")
+    st.markdown("Hệ thống sẽ tự động tìm ra bộ thông số **(Khối lượng lá, Thể tích dung môi, Thời gian)** sao cho **Giá thành 1 gram hoạt chất là thấp nhất**.")
+
+    if st.button("🚀 Chạy Thuật Toán Tối Ưu Hóa", type="primary"):
+        
+        # 1. Định nghĩa hàm mục tiêu cần cực tiểu hóa (Giá thành 1 gram)
+        def objective_function(x):
+            m_la, v_dm, t = x
+            chi_phi_nguyen_lieu = gia_la_sen * m_la
+            chi_phi_dung_moi = gia_dung_moi * v_dm
+            chi_phi_nang_luong = gia_dien * t * 2  # Giả sử công suất thiết bị 2kW
+            
+            tong_chi_phi = chi_phi_nguyen_lieu + chi_phi_dung_moi + chi_phi_nang_luong
+            luong_hoat_chat = (m_la * 1000) * (hieu_suat / 100)
+            
+            # Tránh chia cho 0
+            if luong_hoat_chat <= 0:
+                return 1e6
+            return tong_chi_phi / luong_hoat_chat
+
+        # 2. Thiết lập ràng buộc biên (Bounds) và điểm xuất phát ban đầu (Initial guess)
+        bounds = [
+            (min_khoi_luong, max_khoi_luong),
+            (min_the_tich, max_the_tich),
+            (1.0, 24.0)  # Thời gian từ 1 đến 24 giờ
+        ]
+        initial_guess = [float(min_khoi_luong), float(min_the_tich), 4.0]
+
+        # 3. Chạy thuật toán tối ưu hóa (Nelder-Mead)
+        result = minimize(objective_function, initial_guess, method='Nelder-Mead', bounds=bounds)
+
+        if result.success:
+            opt_m, opt_v, opt_t = result.x
+            
+            # Tính toán lại các giá trị chi tiết tại điểm tối ưu
+            opt_cp_nl = gia_la_sen * opt_m
+            opt_cp_dm = gia_dung_moi * opt_v
+            opt_cp_dien = gia_dien * opt_t * 2
+            opt_total = opt_cp_nl + opt_cp_dm + opt_cp_dien
+            opt_luong_chat = (opt_m * 1000) * (hieu_suat / 100)
+            opt_gia_gram = opt_total / opt_luong_chat
+
+            st.success("✨ Thuật toán đã tìm thấy cấu hình tối ưu hoàn hảo!")
+            
+            # Hiển thị Metric kết quả tối ưu
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Khối lượng lá tối ưu", f"{opt_m:.1f} kg")
+            m2.metric("Thể tích dung môi", f"{opt_v:.1f} L")
+            m3.metric("Thời gian tối ưu", f"{opt_t:.1f} giờ")
+            m4.metric("Giá thành tối thiểu", f"{opt_gia_gram:.0f} VNĐ/g", delta="Tối ưu nhất", delta_color="inverse")
+
+            # Biểu đồ cơ cấu chi phí tối ưu
+            df_chiphi = pd.DataFrame({
+                "Hạng mục": ["Nguyên liệu (Lá sen)", "Dung môi hóa chất", "Năng lượng (Điện)"],
+                "Chi phí (VNĐ)": [opt_cp_nl, opt_cp_dm, opt_cp_dien]
+            })
+            
+            fig = px.pie(df_chiphi, values="Chi phí (VNĐ)", names="Hạng mục", 
+                         title=f"Cơ cấu Chi phí tại Điểm Tối Ưu (Tổng: {opt_total:,.0f} VNĐ)",
+                         hole=0.4, color_discrete_sequence=px.colors.sequential.Teal)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        else:
+            st.warning("⚠️ Thuật toán chưa hội tụ hoàn toàn, hãy thử nới lỏng khoảng giới hạn thông số đầu vào.")
+
+if __name__ == "__main__":
+    show_module_7()
