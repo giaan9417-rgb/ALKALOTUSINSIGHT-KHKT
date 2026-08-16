@@ -8,7 +8,7 @@ import plotly.express as px
 from stmol import showmol
 from data import get_database
 from utils import fetch_pdb, render_3d_molecule, check_lipinski, create_admet_radar, classify_potential
-
+from scipy.optimize import minimize
 
 
 # --- 1. CẤU HÌNH TRANG ---
@@ -151,7 +151,8 @@ page = st.sidebar.radio(
         "3. Phân tích & Xuất báo cáo",
         "4. Phân tích Cấu trúc (Toán)",
         "5. Tối ưu Dung môi (Toán)",
-        "6. Động học Chiết tách (Toán)"
+        "6. Động học Chiết tách (Toán)",
+        "7. Dự toán Quy mô & Kinh tế (Toán)"
     ]
 )
 st.sidebar.divider()
@@ -685,95 +686,66 @@ elif page == "6. Động học Chiết tách (Toán)":
     })
     # Hiển thị bảng với format số thập phân gọn gàng
     st.dataframe(df_display.style.format({"Nồng độ (mg/g)": "{:.4f}"}), use_container_width=True)
-    import streamlit as st
-import pandas as pd
-import plotly.express as px
-from scipy.optimize import minimize
-
-def show_module_7():
-    st.header("7. Dự toán Quy mô & Kinh tế & Tối ưu hóa (Toán)")
+    # --- MODULE 7: DỰ TOÁN QUY MÔ & KINH TẾ (TOÁN) ---
+elif page == "7. Dự toán Quy mô & Kinh tế (Toán)":
+    with st.sidebar:
+        st.header("📖 Hướng dẫn Module 7")
+        st.info("""
+        **Mục tiêu:** Mô phỏng bài toán kinh tế và tự động tối ưu hóa chi phí sản xuất hoạt chất Alkaloid từ lá sen.
+        
+        **Các bước thực hiện:**
+        1. **Nhập liệu thị trường:** Cập nhật giá nguyên liệu, dung môi và điện năng.
+        2. **Giới hạn vận hành:** Tùy chỉnh quy mô mẻ chiết (khối lượng lá, thể tích dung môi).
+        3. **Chạy tối ưu hóa:** Sử dụng thuật toán Scipy để tìm ra thông số cấu hình mang lại chi phí thấp nhất và lợi nhuận cao nhất.
+        """)
+        
+    st.title("7. Dự toán Quy mô & Kinh tế & Tối ưu hóa (Toán)")
     st.markdown("Mô phỏng và tự động tối ưu hóa chi phí sản xuất hoạt chất Alkaloid từ lá sen bằng thuật toán toán học.")
 
-    # Chia cột cho giao diện nhập liệu
-    col1, col2 = st.columns(2)
-
-    with col1:
+    col_in1, col_in2 = st.columns(2)
+    with col_in1:
         st.subheader("Thông số Đầu vào (Thị trường)")
-        gia_la_sen = st.number_input("Giá lá sen khô (VNĐ/kg)", value=50000, step=5000)
-        gia_dung_moi = st.number_input("Giá dung môi tối ưu (VNĐ/Lít)", value=35000, step=1000)
-        gia_dien = st.number_input("Giá điện (VNĐ/kWh)", value=2500, step=100)
+        price_leaf = st.number_input("Giá lá sen khô (VNĐ/kg)", value=50000, step=5000)
+        price_solvent = st.number_input("Giá dung môi tối ưu (VNĐ/Lít)", value=35000, step=2000)
+        price_elec = st.number_input("Giá điện (VNĐ/kWh)", value=2500, step=100)
 
-    with col2:
+    with col_in2:
         st.subheader("Thông số Giới hạn Vận hành")
-        min_khoi_luong, max_khoi_luong = st.slider("Khoảng quy mô mẻ chiết (kg lá)", 1, 200, (1, 50))
-        min_the_tich, max_the_tich = st.slider("Khoảng thể tích dung môi (Lít)", 5, 1000, (10, 200))
-        hieu_suat = st.slider("Hiệu suất thu hồi trung bình (%)", 0.1, 5.0, 1.2)
+        scale_leaf = st.slider("Khoảng quy mô mẻ chiết (kg lá)", 1, 50, (1, 50))
+        vol_solvent = st.slider("Khoảng thể tích dung môi (Lít)", 10, 200, (10, 200))
+        recovery_eff = st.slider("Hiệu suất thu hồi trung bình (%)", 0.5, 2.0, 1.2, step=0.1)
 
     st.divider()
-    st.subheader("🤖 Tối ưu hóa tự động bằng Scipy")
-    st.markdown("Hệ thống sẽ tự động tìm ra bộ thông số **(Khối lượng lá, Thể tích dung môi, Thời gian)** sao cho **Giá thành 1 gram hoạt chất là thấp nhất**.")
+    st.subheader("⚙️ Tối ưu hóa tự động bằng Scipy")
+    
+    if st.button("🚀 Chạy thuật toán tối ưu hóa kinh tế"):
+        # Hàm mục tiêu chi phí: Cost = m_leaf * P_leaf + V_sol * P_sol + Energy * P_elec
+        def objective(x):
+            m, v = x
+            # Giả định tiêu thụ điện năng tương quan tuyến tính với thể tích dung môi khuấy trộn
+            elec_kwh = v * 0.15 
+            total_cost = m * price_leaf + v * price_solvent + elec_kwh * price_elec
+            # Lợi nhuận giả định dựa trên khối lượng hoạt chất thu được (càng cao càng tốt -> tối ưu hóa minimize âm lợi nhuận hoặc tối thiểu chi phí quy đổi)
+            return total_cost
 
-    if st.button("🚀 Chạy Thuật Toán Tối Ưu Hóa", type="primary"):
+        # Ràng buộc
+        bounds = [scale_leaf, vol_solvent]
         
-        # 1. Định nghĩa hàm mục tiêu cần cực tiểu hóa (Giá thành 1 gram)
-        def objective_function(x):
-            m_la, v_dm, t = x
-            chi_phi_nguyen_lieu = gia_la_sen * m_la
-            chi_phi_dung_moi = gia_dung_moi * v_dm
-            chi_phi_nang_luong = gia_dien * t * 2  # Giả sử công suất thiết bị 2kW
+        # Chạy thuật toán tối ưu
+        res = minimize(objective, x0=[(scale_leaf[0]+scale_leaf[1])/2, (vol_solvent[0]+vol_solvent[1])/2], bounds=bounds, method='L-BFGS-B')
+        
+        if res.success:
+            opt_m, opt_v = res.x
+            opt_cost = res.fun
+            est_output_mg = opt_m * recovery_eff * 15 # Giả định trung bình 15mg hoạt chất/kg lá
             
-            tong_chi_phi = chi_phi_nguyen_lieu + chi_phi_dung_moi + chi_phi_nang_luong
-            luong_hoat_chat = (m_la * 1000) * (hieu_suat / 100)
+            st.success("🎉 Tối ưu hóa thành công!")
             
-            # Tránh chia cho 0
-            if luong_hoat_chat <= 0:
-                return 1e6
-            return tong_chi_phi / luong_hoat_chat
-
-        # 2. Thiết lập ràng buộc biên (Bounds) và điểm xuất phát ban đầu (Initial guess)
-        bounds = [
-            (min_khoi_luong, max_khoi_luong),
-            (min_the_tich, max_the_tich),
-            (1.0, 24.0)  # Thời gian từ 1 đến 24 giờ
-        ]
-        initial_guess = [float(min_khoi_luong), float(min_the_tich), 4.0]
-
-        # 3. Chạy thuật toán tối ưu hóa (Nelder-Mead)
-        result = minimize(objective_function, initial_guess, method='Nelder-Mead', bounds=bounds)
-
-        if result.success:
-            opt_m, opt_v, opt_t = result.x
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Khối lượng lá tối ưu", f"{opt_m:.2f} kg")
+            m2.metric("Thể tích dung môi tối ưu", f"{opt_v:.2f} Lít")
+            m3.metric("Tổng chi phí ước tính", f"{opt_cost:,.0f} VNĐ")
             
-            # Tính toán lại các giá trị chi tiết tại điểm tối ưu
-            opt_cp_nl = gia_la_sen * opt_m
-            opt_cp_dm = gia_dung_moi * opt_v
-            opt_cp_dien = gia_dien * opt_t * 2
-            opt_total = opt_cp_nl + opt_cp_dm + opt_cp_dien
-            opt_luong_chat = (opt_m * 1000) * (hieu_suat / 100)
-            opt_gia_gram = opt_total / opt_luong_chat
-
-            st.success("✨ Thuật toán đã tìm thấy cấu hình tối ưu hoàn hảo!")
-            
-            # Hiển thị Metric kết quả tối ưu
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Khối lượng lá tối ưu", f"{opt_m:.1f} kg")
-            m2.metric("Thể tích dung môi", f"{opt_v:.1f} L")
-            m3.metric("Thời gian tối ưu", f"{opt_t:.1f} giờ")
-            m4.metric("Giá thành tối thiểu", f"{opt_gia_gram:.0f} VNĐ/g", delta="Tối ưu nhất", delta_color="inverse")
-
-            # Biểu đồ cơ cấu chi phí tối ưu
-            df_chiphi = pd.DataFrame({
-                "Hạng mục": ["Nguyên liệu (Lá sen)", "Dung môi hóa chất", "Năng lượng (Điện)"],
-                "Chi phí (VNĐ)": [opt_cp_nl, opt_cp_dm, opt_cp_dien]
-            })
-            
-            fig = px.pie(df_chiphi, values="Chi phí (VNĐ)", names="Hạng mục", 
-                         title=f"Cơ cấu Chi phí tại Điểm Tối Ưu (Tổng: {opt_total:,.0f} VNĐ)",
-                         hole=0.4, color_discrete_sequence=px.colors.sequential.Teal)
-            st.plotly_chart(fig, use_container_width=True)
-            
+            st.info(f"💡 **Khuyến nghị vận hành:** Để đạt lượng hoạt chất ước tính **{est_output_mg:.1f} mg** với chi phí tối ưu nhất, hệ thống cần cấu hình **{opt_m:.1f} kg** lá sen khô ngâm trong **{opt_v:.1f} lít** dung môi.")
         else:
-            st.warning("⚠️ Thuật toán chưa hội tụ hoàn toàn, hãy thử nới lỏng khoảng giới hạn thông số đầu vào.")
-
-if __name__ == "__main__":
-    show_module_7()
+            st.warning("⚠️ Thuật toán không hội tụ trong giới hạn cho phép. Vui lòng nới lỏng các thanh trượt thông số.")
