@@ -7,86 +7,105 @@ import random
 import os
 
 # ==============================================================================
-# 1. CẤU HÌNH HỆ THỐNG & GIAO DIỆN CHỦ ĐẠO (CHẠM DESIGN SYSTEM)
+# 1. CẤU HÌNH HỆ THỐNG & GIAO DIỆN CHỦ ĐẠO (CHẠM DESIGN SYSTEM - EPIC EDITION)
 # ==============================================================================
 st.set_page_config(
-    page_title="CHẠM Hub | Thấu hiểu để kết nối – Không ai phải đi một mình",
+    page_title="CHẠM Hub | Nền tảng Nâng cao Nhận thức & Đồng hành Alzheimer",
     page_icon="🪷",
     layout="wide",
-    initial_sidebar_state="collapsed" # Ẩn sidebar mặc định để tập trung toàn bộ không gian cho menu ngang
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS tinh chỉnh giao diện menu ngang, thẻ card và màu sắc chuẩn CHẠM
+# Custom CSS siêu cấp: Tùy biến toàn bộ giao diện, hiệu ứng chuyển màu, thẻ card hiện đại
 st.markdown("""
 <style>
+    /* Tổng thể ứng dụng */
     .main {
-        background-color: #FAF9F6;
+        background-color: #F8F9FA;
     }
-    h1, h2, h3 {
+    h1, h2, h3, h4 {
         color: #18324A;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-    .cham-card {
-        background-color: #FFFFFF;
-        padding: 24px;
-        border-radius: 14px;
-        border-left: 6px solid #55A88B;
-        box-shadow: 0 4px 12px rgba(24, 50, 74, 0.06);
-        margin-bottom: 20px;
-    }
-    .cham-card-warm {
-        background-color: #FFFDF9;
-        padding: 24px;
-        border-radius: 14px;
-        border-left: 6px solid #D18A55;
-        box-shadow: 0 4px 12px rgba(209, 138, 85, 0.08);
-        margin-bottom: 20px;
-    }
-    .cham-quote {
-        background-color: #E0F0E8;
-        color: #18324A;
-        padding: 20px 26px;
-        border-radius: 12px;
-        font-style: italic;
-        font-size: 1.08em;
-        border: 1px solid #55A88B;
-        margin: 18px 0;
-    }
-    .badge-nc { background-color: #DCEAF5; color: #18324A; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
-    .badge-cs { background-color: #E0F0E8; color: #2D6A4F; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
-    .badge-cd { background-color: #FCE8D5; color: #9C5221; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
-    .badge-cn { background-color: #E8E2F4; color: #5B4E8C; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
     
-    /* Tinh chỉnh thanh chọn radio thành dạng tab ngang hiện đại */
-    div.row-widget.stRadio > div {
-        flex-direction: row;
-        justify-content: center;
+    /* Thẻ Card cao cấp */
+    .cham-epic-card {
+        background: #FFFFFF;
+        padding: 28px;
+        border-radius: 16px;
+        border-left: 8px solid #55A88B;
+        box-shadow: 0 10px 25px rgba(24, 50, 74, 0.07);
+        margin-bottom: 22px;
+        transition: transform 0.3s ease;
+    }
+    .cham-epic-card:hover {
+        transform: translateY(-3px);
+    }
+    .cham-epic-card-warm {
+        background: linear-gradient(135deg, #FFFDF9 0%, #FFF5EC 100%);
+        padding: 28px;
+        border-radius: 16px;
+        border-left: 8px solid #D18A55;
+        box-shadow: 0 10px 25px rgba(209, 138, 85, 0.09);
+        margin-bottom: 22px;
+    }
+    .cham-epic-card-tech {
+        background: linear-gradient(135deg, #F5F3FB 0%, #EFEBF9 100%);
+        padding: 28px;
+        border-radius: 16px;
+        border-left: 8px solid #7867B5;
+        box-shadow: 0 10px 25px rgba(120, 103, 181, 0.09);
+        margin-bottom: 22px;
+    }
+    
+    /* Khung trích dẫn nhân văn */
+    .cham-quote-box {
+        background: linear-gradient(135deg, #E0F0E8 0%, #D2EBE0 100%);
+        color: #18324A;
+        padding: 24px 32px;
+        border-radius: 14px;
+        font-style: italic;
+        font-size: 1.12em;
+        border-left: 6px solid #2D6A4F;
+        box-shadow: 0 4px 15px rgba(45, 106, 79, 0.08);
+        margin: 20px 0;
+    }
+    
+    /* Hệ thống Badge */
+    .badge-nc { background-color: #DCEAF5; color: #18324A; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85em; }
+    .badge-cs { background-color: #E0F0E8; color: #2D6A4F; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85em; }
+    .badge-cd { background-color: #FCE8D5; color: #9C5221; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85em; }
+    .badge-cn { background-color: #E8E2F4; color: #5B4E8C; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85em; }
+
+    /* Thanh chọn tab ngang cao cấp */
+    .stRadio > div {
         background-color: #FFFFFF;
-        padding: 10px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        gap: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        gap: 8px;
+        justify-content: center;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. MÀN HÌNH CHÀO MỪNG (INTRO SPLASH SCREEN)
+# 2. MÀN HÌNH CHÀO MỪNG HOÀNH TRÁNG (INTRO SPLASH SCREEN)
 # ==============================================================================
 if 'visited' not in st.session_state:
     intro_placeholder = st.empty()
     with intro_placeholder.container():
         st.markdown("""
             <style>
-            @keyframes floatUp {
-                0% { transform: translateY(40px) scale(0.9); opacity: 0; }
+            @keyframes epicFloat {
+                0% { transform: translateY(50px) scale(0.85); opacity: 0; }
                 50% { opacity: 1; }
-                100% { transform: translateY(-20px) scale(1.05); opacity: 1; }
+                100% { transform: translateY(0px) scale(1); opacity: 1; }
             }
-            .splash-screen {
+            .epic-splash {
                 position: fixed;
                 top: 0; left: 0; width: 100vw; height: 100vh;
-                background: linear-gradient(135deg, #18324A 0%, #2C5E8A 50%, #55A88B 100%);
+                background: linear-gradient(135deg, #18324A 0%, #254B6E 40%, #2D6A4F 100%);
                 z-index: 9999;
                 display: flex;
                 flex-direction: column;
@@ -94,24 +113,24 @@ if 'visited' not in st.session_state:
                 align-items: center;
                 color: white;
                 text-align: center;
-                padding: 20px;
+                padding: 30px;
             }
-            .splash-icon { font-size: 110px; animation: floatUp 2.5s ease-out forwards; }
-            .splash-title { font-size: 46px; font-weight: 800; letter-spacing: 6px; margin-top: 15px; }
-            .splash-sub { font-size: 21px; color: #F2C66D; margin-top: 10px; font-weight: 500; }
+            .epic-icon { font-size: 120px; animation: epicFloat 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+            .epic-title { font-size: 52px; font-weight: 900; letter-spacing: 8px; margin-top: 20px; text-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+            .epic-sub { font-size: 22px; color: #F2C66D; margin-top: 12px; font-weight: 600; letter-spacing: 2px; }
             </style>
-            <div class="splash-screen">
-                <div class="splash-icon">🪷 🤝</div>
-                <div class="splash-title">DỰ ÁN CHẠM</div>
-                <div class="splash-sub">THẤU HIỂU ĐỂ KẾT NỐI – KẾT NỐI ĐỂ SẺ CHIA</div>
-                <p style="margin-top: 25px; opacity: 0.85; font-size: 16px;">"Không ai phải đi một mình trên hành trình đối diện với Alzheimer"</p>
+            <div class="epic-splash">
+                <div class="epic-icon">🪷 🤝</div>
+                <div class="epic-title">DỰ ÁN CHẠM</div>
+                <div class="epic-sub">THẤU HIỂU ĐỂ KẾT NỐI – KẾT NỐI ĐỂ SẺ CHIA</div>
+                <p style="margin-top: 30px; opacity: 0.9; font-size: 17px; font-style: italic;">"Không ai phải đi một mình trên hành trình đối diện với Alzheimer"</p>
             </div>
         """, unsafe_allow_html=True)
-        time.sleep(3)
+        time.sleep(3.2)
     intro_placeholder.empty()
     st.session_state['visited'] = True
 
-# Khởi tạo kho lưu trữ dữ liệu trong session_state
+# Khởi tạo kho dữ liệu lưu trữ mở rộng trong session_state
 if 'community_notes' not in st.session_state:
     st.session_state['community_notes'] = [
         {"author": "Minh Thư (Học sinh lớp 11)", "role": "Người chơi trải nghiệm CHẠM", "msg": "Trước đây mình hay gắt gỏng mỗi khi bà hỏi đi hỏi lại một câu. Sau khi chơi bàn cờ CHẠM và đọc phần trải nghiệm góc nhìn, mình mới hiểu bà không cố tình làm phiền mà vì ký ức của bà đang rơi rụng từng ngày."},
@@ -120,39 +139,41 @@ if 'community_notes' not in st.session_state:
     ]
 
 if 'caregiver_journal' not in st.session_state:
-    st.session_state['caregiver_journal'] = []
+    st.session_state['caregiver_journal'] = [
+        {"title": "Một ngày kiên nhẫn hơn", "content": "Hôm nay bố quên chìa khóa xe và tìm suốt 30 phút. Nhớ lại cẩm nang của CHẠM, mình không còn cáu gắt nữa mà nhẹ nhàng cùng bố tìm lại. Nhìn nụ cười của bố lúc tìm thấy, mình thấy lòng nhẹ tênh.", "time": "12/11/2026 19:30"}
+    ]
 
 # ==============================================================================
-# 3. HEADER & THANH MENU NGANG TRỰC TIẾP TRÊN MAIN MENU
+# 3. HEADER & THANH MENU NGANG CAO CẤP (MAIN NAVIGATION)
 # ==============================================================================
-col_logo, col_title = st.columns([0.15, 0.85])
+col_logo, col_title = st.columns([0.12, 0.88])
 with col_logo:
     if os.path.exists("AlkaLotus/logo.png"):
-        st.image("AlkaLotus/logo.png", width=100)
+        st.image("AlkaLotus/logo.png", width=110)
     elif os.path.exists("logo.png"):
-        st.image("logo.png", width=100)
+        st.image("logo.png", width=110)
     else:
-        st.markdown("<h1>🪷</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center;'>🪷</h1>", unsafe_allow_html=True)
 
 with col_title:
-    st.markdown("<h1 style='margin-bottom:0; color:#18324A;'>CHẠM Hub — Không Gian Tri Thức & Kết Nối</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#55A88B; font-weight:600; margin-top:0;'>Thấu hiểu để kết nối – Kết nối để sẻ chia • Nền tảng số bổ trợ Board Game CHẠM</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='margin-bottom:0; color:#18324A; font-weight:800;'>CHẠM HUB — TRẠM TRI THỨC & KẾT NỐI CỘNG ĐỒNG</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#2D6A4F; font-weight:600; font-size:1.1em; margin-top:2px;'>Thấu hiểu để kết nối – Kết nối để sẻ chia • Nền tảng số tích hợp toàn diện cùng Board Game CHẠM</p>", unsafe_allow_html=True)
 
 st.divider()
 
-# Thanh menu ngang chính hiển thị ngay trên màn hình (Main Menu Navigation)
+# Thanh menu ngang chính (Main Menu Navigation Bar)
 selected_tab = st.selectbox(
-    "📌 LỰA CHỌN KHÔNG GIAN TRẢI NGHIỆM:",
+    "📌 CHỌN KHÔNG GIAN KHÁM PHÁ:",
     [
-        "🏠 1. Trang chủ & Tổng quan Dự án",
+        "🏠 1. Tổng quan Dự án & Tầm nhìn",
         "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý",
         "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm",
         "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn",
         "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ)",
-        "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)",
-        "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần",
-        "📚 8. Tài nguyên Nghiên cứu & Thư viện",
-        "💌 9. Bức tường Sẻ chia Cộng đồng"
+        "🧠 6. Thử thách Phá bỏ Định kiến (Interactive Quiz)",
+        "📝 7. Nhật ký Người chăm sóc & Trạm Chữa lành",
+        "📚 8. Thư viện Tài nguyên & Nghiên cứu Khoa học",
+        "💌 9. Bức tường Sẻ chia & Kết nối Cộng đồng"
     ],
     label_visibility="collapsed"
 )
@@ -160,26 +181,26 @@ selected_tab = st.selectbox(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ==============================================================================
-# MODULE 1: TRANG CHỦ & TỔNG QUAN DỰ ÁN
+# MODULE 1: TỔNG QUAN DỰ ÁN & TẦM NHÌN
 # ==============================================================================
-if selected_tab == "🏠 1. Trang chủ & Tổng quan Dự án":
+if selected_tab == "🏠 1. Tổng quan Dự án & Tầm nhìn":
     st.title("🪷 CHẠM — Hành Trình Đánh Thức Sự Thấu Cảm")
     st.markdown("#### *“Alzheimer có thể lấy đi những ký ức trong tâm trí, nhưng không bao giờ có thể lấy đi nhu cầu được yêu thương và tôn trọng của một con người.”*")
     
     st.markdown("""
-    <div class="cham-quote">
-        Dự án <b>CHẠM</b> kết hợp hoàn hảo giữa <b>Board Game giáo dục thực tế (64 ô hành trình chiến lược)</b> và 
-        <b>Nền tảng số trực tuyến</b>, quy tụ 4 trụ cột liên ngành: <b>Nghiên cứu – Công nghệ – Chăm sóc – Cộng đồng</b> 
-        nhằm xóa bỏ sự kỳ thị, lan tỏa tri thức và đồng hành cùng người mắc bệnh Alzheimer và gia đình họ.
+    <div class="cham-quote-box">
+        Dự án <b>CHẠM</b> là một hệ sinh thái giáo dục và xã hội đột phá, kết hợp hoàn hảo giữa <b>Board Game chiến lược thực tế (64 ô hành trình)</b> và 
+        <b>Nền tảng số trực tuyến thông minh</b>. Dự án quy tụ 4 trụ cột liên ngành: <b>Nghiên cứu – Công nghệ – Chăm sóc – Cộng đồng</b> 
+        nhằm xóa bỏ mọi kỳ thị xã hội, lan tỏa tri thức khoa học và đồng hành bền vững cùng người mắc bệnh Alzheimer cùng gia đình họ.
     </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("📊 Bức tranh toàn cảnh: Sa sút trí tuệ & Thách thức toàn cầu")
+    st.subheader("📊 Bức tranh toàn cảnh: Thách thức y tế & xã hội toàn cầu")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Người mắc toàn cầu", "55+ Triệu", "Tăng 10 triệu ca mới/năm")
-    c2.metric("Tỷ lệ do Alzheimer", "60% – 70%", "Nguyên nhân hàng đầu")
-    c3.metric("Tại Việt Nam (Ước tính)", "~500.000+", "Gia tăng mạnh theo già hóa dân số")
-    c4.metric("Người chịu ảnh hưởng", "150+ Triệu", "Gia đình và người chăm sóc")
+    c2.metric("Tỷ lệ do Alzheimer", "60% – 70%", "Nguyên nhân hàng đầu gây sa sút")
+    c3.metric("Tại Việt Nam (Ước tính)", "~500.000+", "Gia tăng mạnh theo đà già hóa dân số")
+    c4.metric("Người chịu ảnh hưởng", "150+ Triệu", "Gia đình và người chăm sóc trực tiếp")
 
     col_chart, col_info = st.columns([1.3, 1])
     with col_chart:
@@ -192,22 +213,22 @@ if selected_tab == "🏠 1. Trang chủ & Tổng quan Dự án":
             df_trend, x="Năm", y="Số lượng (Triệu người)",
             text="Số lượng (Triệu người)",
             color="Năm",
-            color_discrete_sequence=["#3979B9", "#55A88B", "#D18A55"]
+            color_discrete_sequence=["#18324A", "#55A88B", "#D18A55"]
         )
         fig.update_traces(textposition="outside", textfont_size=14)
-        fig.update_layout(showlegend=False, height=340, margin=dict(t=20, b=20, l=20, r=20), plot_bgcolor="rgba(0,0,0,0)")
+        fig.update_layout(showlegend=False, height=360, margin=dict(t=20, b=20, l=20, r=20), plot_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig, use_container_width=True)
 
     with col_info:
-        st.markdown("##### 🎯 Sứ mệnh cốt lõi của CHẠM")
+        st.markdown("##### 🎯 Triết lý thiết kế 'Phygital' độc tôn")
         st.markdown("""
-        <div class="cham-card">
-            <b>1. Chuyển dịch góc nhìn:</b><br>
-            Không xem bệnh tật là kẻ thù để tiêu diệt hay kỳ thị người bệnh, mà hướng tới sự thấu hiểu, kiên nhẫn và sẻ chia gánh nặng.<br><br>
-            <b>2. Mô hình Phygital (Kết hợp Vật lý & Số):</b><br>
-            Board game 600x600mm để kết nối trực tiếp tại bàn chơi; Web Hub trực tuyến để mở rộng kiến thức, tra cứu tình huống và kết nối cộng đồng.<br><br>
+        <div class="cham-epic-card">
+            <b>1. Trải nghiệm đa chiều (Phygital):</b><br>
+            Kết hợp giữa Board Game vật lý (tương tác trực tiếp, cầm nắm, kết nối cảm xúc tại bàn chơi) và Web Hub số hóa (mở rộng tri thức, tra cứu, chơi từ xa).<br><br>
+            <b>2. Phi-đối kháng (Non-Antagonistic):</b><br>
+            Không xem bệnh tật là kẻ thù để tiêu diệt, mà hướng tới sự thấu hiểu, kiên nhẫn, sẻ chia gánh nặng chăm sóc.<br><br>
             <b>3. Khẩu hiệu hành động:</b><br>
-            <i>Thấu hiểu để kết nối – Kết nối để sẻ chia. Không ai phải đi một mình!</i>
+            <i>Thấu hiểu để kết nối – Không ai phải đi một mình!</i>
         </div>
         """, unsafe_allow_html=True)
 
@@ -216,34 +237,34 @@ if selected_tab == "🏠 1. Trang chủ & Tổng quan Dự án":
     p1, p2, p3, p4 = st.columns(4)
     with p1:
         st.markdown("""
-        <div class="cham-card">
+        <div class="cham-epic-card">
             <span class="badge-nc">NGHIÊN CỨU</span>
-            <h4 style="margin-top:10px;">Khoa học & Dược liệu</h4>
-            <p style="font-size:0.9em;">Khám phá cơ chế sinh học phân tử, vai trò của enzyme AChE, BACE1 và tiềm năng ứng dụng các hoạt chất tự nhiên (như Alkaloid lá sen).</p>
+            <h4 style="margin-top:12px;">Khoa học & Dược liệu</h4>
+            <p style="font-size:0.92em; line-height:1.5;">Khám phá cơ chế sinh học phân tử, vai trò của enzyme AChE, BACE1 và tiềm năng ứng dụng các hoạt chất tự nhiên (như Alkaloid lá sen).</p>
         </div>
         """, unsafe_allow_html=True)
     with p2:
         st.markdown("""
-        <div class="cham-card">
+        <div class="cham-epic-card-tech">
             <span class="badge-cn">CÔNG NGHỆ</span>
-            <h4 style="margin-top:10px;">Giải pháp số vì con người</h4>
-            <p style="font-size:0.9em;">Ứng dụng AI hỗ trợ sàng lọc sớm, thiết bị định vị an toàn, ứng dụng nhắc nhở sinh hoạt và mô phỏng tin sinh học trực quan.</p>
+            <h4 style="margin-top:12px;">Giải pháp số vì người bệnh</h4>
+            <p style="font-size:0.92em; line-height:1.5;">Ứng dụng AI hỗ trợ sàng lọc sớm, thiết bị định vị an toàn, ứng dụng nhắc nhở sinh hoạt và mô phỏng tin sinh học trực quan.</p>
         </div>
         """, unsafe_allow_html=True)
     with p3:
         st.markdown("""
-        <div class="cham-card">
+        <div class="cham-epic-card-warm">
             <span class="badge-cs">CHĂM SÓC</span>
-            <h4 style="margin-top:10px;">Không gian thấu hiểu</h4>
-            <p style="font-size:0.9em;">Xây dựng mô hình chăm sóc toàn diện tại nhà, bảo vệ phẩm giá người bệnh và xoa dịu áp lực tâm lý cho người chăm sóc chính.</p>
+            <h4 style="margin-top:12px;">Không gian thấu hiểu</h4>
+            <p style="font-size:0.92em; line-height:1.5;">Xây dựng mô hình chăm sóc toàn diện tại nhà, bảo vệ phẩm giá người bệnh và xoa dịu áp lực tâm lý cho người chăm sóc chính.</p>
         </div>
         """, unsafe_allow_html=True)
     with p4:
         st.markdown("""
-        <div class="cham-card">
+        <div class="cham-epic-card">
             <span class="badge-cd">CỘNG ĐỒNG</span>
-            <h4 style="margin-top:10px;">Lan tỏa & Mạng lưới</h4>
-            <p style="font-size:0.9em;">Tổ chức các chiến dịch giáo dục cộng đồng, xóa bỏ định kỳ xã hội và kết nối các nguồn lực xã hội để đồng hành bền vững.</p>
+            <h4 style="margin-top:12px;">Lan tỏa & Mạng lưới</h4>
+            <p style="font-size:0.92em; line-height:1.5;">Tổ chức các chiến dịch giáo dục cộng đồng, xóa bỏ kỳ thị xã hội và kết nối các nguồn lực xã hội để đồng hành bền vững.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -254,23 +275,23 @@ elif selected_tab == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
     st.title("🔬 Khoa Học Thần Kinh Về Bệnh Alzheimer")
     st.markdown("Hiểu rõ cơ chế sinh học bên trong não bộ giúp chúng ta có cái nhìn khoa học, khách quan và thấu cảm hơn với người bệnh.")
 
-    tab_bio1, tab_bio2, tab_bio3 = st.tabs(["🧬 Mảng bám Amyloid & Đám rối Tau", "📉 Sự suy giảm chất dẫn truyền thần kinh", "🌿 Tiềm năng từ Hướng đi Dược liệu tự nhiên"])
+    tab_bio1, tab_bio2, tab_bio3 = st.tabs(["🧬 Mảng bám Amyloid & Đám rối Tau", "📉 Sự suy giảm chất dẫn truyền thần kinh", "🌿 Hướng đi Dược liệu tự nhiên"])
 
     with tab_bio1:
-        st.subheader("Cơ chế phân tử hình thành tổn thương não bộ")
+        st.subheader("Cơ chế phân tử hình thành tổn thương tế bào thần kinh")
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             st.markdown("""
-            <div class="cham-card">
+            <div class="cham-epic-card">
                 <h4>1. Mảng bám Amyloid-beta (Aβ Plaques)</h4>
-                <p>Bình thường, protein tiền thân amyloid (APP) được cắt xẻ an toàn. Tuy nhiên, do sự hoạt động bất thường của các enzyme (đặc biệt là <b>BACE1</b>), các đoạn protein bị cắt ngắn tạo thành các mảng dính kết tụ lại bên ngoài tế bào thần kinh, gây cản trở truyền tín hiệu và kích hoạt phản ứng viêm.</p>
+                <p style="line-height:1.6;">Bình thường, protein tiền thân amyloid (APP) được cắt xẻ an toàn. Tuy nhiên, do sự hoạt động bất thường của các enzyme (đặc biệt là <b>BACE1</b>), các đoạn protein bị cắt ngắn tạo thành các mảng dính kết tụ lại bên ngoài tế bào thần kinh, gây cản trở truyền tín hiệu và kích hoạt phản ứng viêm mãn tính.</p>
             </div>
             """, unsafe_allow_html=True)
         with col_b2:
             st.markdown("""
-            <div class="cham-card">
+            <div class="cham-epic-card">
                 <h4>2. Đám rối sợi thần kinh Tau (Tau Tangles)</h4>
-                <p>Bên trong tế bào thần kinh, protein Tau đóng vai trò như các 'thanh ray' giúp vận chuyển chất dinh dưỡng. Ở người bệnh Alzheimer, protein Tau bị biến đổi hóa học (phosphoryl hóa quá mức), cuộn xoắn lại thành các đám rối, làm sập hệ thống giao thông nội bào và khiến tế bào chết đi.</p>
+                <p style="line-height:1.6;">Bên trong tế bào thần kinh, protein Tau đóng vai trò như các 'thanh ray' giúp vận chuyển chất dinh dưỡng. Ở người bệnh Alzheimer, protein Tau bị biến đổi hóa học (phosphoryl hóa quá mức), cuộn xoắn lại thành các đám rối, làm sập hệ thống giao thông nội bào và khiến tế bào chết đi.</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -278,7 +299,7 @@ elif selected_tab == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
         st.subheader("Sự thiếu hụt Acetylcholine và vai trò của Enzyme AChE")
         st.write("Acetylcholine là chất dẫn truyền thần kinh cực kỳ quan trọng đối với trí nhớ, khả năng học tập và sự tỉnh táo.")
         st.markdown("""
-        <div class="cham-card-warm">
+        <div class="cham-epic-card-warm">
             <b>Cơ chế tác động của Enzyme Acetylcholinesterase (AChE):</b><br>
             Ở người mắc Alzheimer, các tế bào sản xuất Acetylcholine bị suy giảm nghiêm trọng. Thêm vào đó, enzyme AChE liên tục phân hủy lượng chất dẫn truyền ít ỏi còn lại, làm gián đoạn hoàn toàn các mạch ghi nhớ.<br><br>
             <b>Hướng tiếp cận y học hiện đại:</b><br>
@@ -289,9 +310,11 @@ elif selected_tab == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
     with tab_bio3:
         st.subheader("Triển vọng nghiên cứu dược liệu tự nhiên (Alkaloid lá sen)")
         st.markdown("""
-        Trong các nghiên cứu khoa học gần đây, việc khai thác các hợp chất tự nhiên như nhóm **Alkaloid chiết xuất từ lá sen** (ví dụ: Nuciferine, Roemerine) cho thấy triển vọng tích cực trong việc thể hiện ái lực gắn kết với các đích enzyme gây bệnh ($AChE$ và $BACE1$). 
-        Điều này mở ra hướng đi mới trong việc tận dụng nguồn dược liệu y học cổ truyền kết hợp công nghệ tin sinh học hiện đại để phát triển các giải pháp hỗ trợ an toàn, chi phí hợp lý.
-        """)
+        <div class="cham-epic-card-tech">
+            Trong các nghiên cứu khoa học gần đây, việc khai thác các hợp chất tự nhiên như nhóm <b>Alkaloid chiết xuất từ lá sen</b> (ví dụ: Nuciferine, Roemerine) cho thấy triển vọng tích cực trong việc thể hiện ái lực gắn kết với các đích enzyme gây bệnh ($AChE$ và $BACE1$). 
+            Điều này mở ra hướng đi mới trong việc tận dụng nguồn dược liệu y học cổ truyền kết hợp công nghệ tin sinh học hiện đại để phát triển các giải pháp hỗ trợ an toàn, chi phí hợp lý.
+        </div>
+        """, unsafe_allow_html=True)
 
 # ==============================================================================
 # MODULE 3: TRẢI NGHIỆM GÓC NHÌN & MÔ PHỎNG ĐỒNG CẢM
@@ -328,7 +351,7 @@ elif selected_tab == "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồn
 
         with col_sim2:
             st.markdown("""
-            <div class="cham-card-warm">
+            <div class="cham-epic-card-warm">
                 <h4>💡 Góc nhìn nhân văn từ CHẠM:</h4>
                 <p>Khi người bệnh nói những câu vô lý hoặc nhầm lẫn, họ <b>không hề cố tình gây khó dễ</b>. Đó là lúc não bộ của họ đang chịu tổn thương sâu sắc.</p>
                 <p>Điều họ cần không phải là một cuộc tranh cãi đúng - sai, mà là sự bao dung và một cái ôm trấn an.</p>
@@ -396,7 +419,7 @@ elif selected_tab == "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn":
         st.caption("**Hiệu quả:** Xoa dịu cảm xúc, bảo vệ lòng tự trọng và duy trì kết nối an toàn.")
 
 # ==============================================================================
-# MODULE 5: TRẠM TƯƠNG TÁC THẺ BÀI CHẠM (132 THẺ MỞ RỘNG)
+# MODULE 5: TRẠM TƯƠNG TÁC THẺ BÀI CHẠM (132 THẺ)
 # ==============================================================================
 elif selected_tab == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ)":
     st.title("🎲 Trạm Rút Thẻ Tình Huống CHẠM")
@@ -432,7 +455,7 @@ elif selected_tab == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ)"
         if 'active_card' in st.session_state:
             ac = st.session_state['active_card']
             st.markdown(f"""
-            <div class="cham-card" style="border-left: 8px solid #18324A;">
+            <div class="cham-epic-card" style="border-left: 8px solid #18324A;">
                 <span class="badge-nc">{st.session_state['active_cat']}</span>
                 <h3 style="margin-top:12px;">[{ac['code']}] {ac['title']}</h3>
                 <p style="font-size:1.08em; line-height:1.6;">{ac['content']}</p>
@@ -447,7 +470,7 @@ elif selected_tab == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ)"
 # ==============================================================================
 # MODULE 6: THỬ THÁCH PHÁ BỎ ĐỊNH KIẾN (QUIZ)
 # ==============================================================================
-elif selected_tab == "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)":
+elif selected_tab == "🧠 6. Thử thách Phá bỏ Định kiến (Interactive Quiz)":
     st.title("🧠 Kiểm Tra Kiến Thức & Phá Bỏ Định Kiến")
     st.markdown("Trắc nghiệm nhanh 5 câu hỏi giúp bạn củng cố nhận thức chuẩn xác về bệnh Alzheimer.")
 
@@ -478,9 +501,9 @@ elif selected_tab == "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)":
             st.warning(f"🌱 **HOÀN THÀNH TỐT ({points}/5 điểm)!** Hãy khám phá thêm các chuyên mục cẩm nang để hiểu thêm nhiều kiến thức bổ ích nhé.")
 
 # ==============================================================================
-# MODULE 7: NHẬT KÝ NGƯỜI CHĂM SÓC & SỨC KHỎE TINH THẦN
+# MODULE 7: NHẬT KÝ NGƯỜI CHĂM SÓC & TRẠM CHỮA LÀNH
 # ==============================================================================
-elif selected_tab == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần":
+elif selected_tab == "📝 7. Nhật ký Người chăm sóc & Trạm Chữa lành":
     st.title("📝 Góc Nhật Ký & Trạm Chữa Lành Tâm Hồn")
     st.markdown("Nơi ghi lại những tâm tư, áp lực hoặc những khoảnh khắc ấm áp của những người làm công tác chăm sóc gia đình.")
 
@@ -505,7 +528,7 @@ elif selected_tab == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh
         else:
             for item in st.session_state['caregiver_journal']:
                 st.markdown(f"""
-                <div class="cham-card-warm">
+                <div class="cham-epic-card-warm">
                     <div style="display:flex; justify-content:space-between;">
                         <b>📌 {item['title']}</b>
                         <span style="font-size:0.85em; color:#666;">{item['time']}</span>
@@ -515,9 +538,9 @@ elif selected_tab == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh
                 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# MODULE 8: TÀI NGUYÊN NGHIÊN CỨU & THƯ VIỆN
+# MODULE 8: THƯ VIỆN TÀI NGUYÊN & NGHIÊN CỨU KHOA HỌC
 # ==============================================================================
-elif selected_tab == "📚 8. Tài nguyên Nghiên cứu & Thư viện":
+elif selected_tab == "📚 8. Thư viện Tài nguyên & Nghiên cứu Khoa học":
     st.title("📚 Thư Viện Tài Nguyên & Nghiên Cứu CHẠM")
     st.markdown("Tổng hợp các tài liệu hướng dẫn, báo cáo khoa học và tài nguyên truyền thông phục vụ cộng đồng.")
 
@@ -539,9 +562,9 @@ elif selected_tab == "📚 8. Tài nguyên Nghiên cứu & Thư viện":
             st.button("📥 Tải tài liệu kỹ thuật dự án", key="dl_2")
 
 # ==============================================================================
-# MODULE 9: BỨC TƯỜNG SẺ CHIA CỘNG ĐỒNG
+# MODULE 9: BỨC TƯỜNG SẺ CHIA & KẾT NỐI CỘNG ĐỒNG
 # ==============================================================================
-elif selected_tab == "💌 9. Bức tường Sẻ chia Cộng đồng":
+elif selected_tab == "💌 9. Bức tường Sẻ chia & Kết nối Cộng đồng":
     st.title("💌 Bức Tường Sẻ Chia — Không Ai Phải Đi Một Mình")
     st.markdown("Nơi gắn kết những trái tim yêu thương, gửi gắm những lời nhắn động viên ý nghĩa đến cộng đồng.")
 
@@ -575,7 +598,7 @@ elif selected_tab == "💌 9. Bức tường Sẻ chia Cộng đồng":
         st.subheader(f"🌿 Những lời nhắn từ cộng đồng ({len(st.session_state['community_notes'])})")
         for note in st.session_state['community_notes']:
             st.markdown(f"""
-            <div class="cham-card-warm">
+            <div class="cham-epic-card-warm">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <b style="color:#18324A; font-size:1.05em;">👤 {note['author']}</b>
                     <span class="badge-cd">{note['role']}</span>
