@@ -1,773 +1,590 @@
 import streamlit as st
 import pandas as pd
-import joblib
-import numpy as np
-import time
-import os
 import plotly.express as px
-from stmol import showmol
-from data import get_database
-from utils import fetch_pdb, render_3d_molecule, check_lipinski, create_admet_radar, classify_potential
-from scipy.optimize import minimize
+import plotly.graph_objects as go
+import time
+import random
+import os
 
-
-# --- 1. CẤU HÌNH TRANG ---
+# ==============================================================================
+# 1. CẤU HÌNH HỆ THỐNG & GIAO DIỆN CHỦ ĐẠO (CHẠM DESIGN SYSTEM)
+# ==============================================================================
 st.set_page_config(
-    page_title="AlkaLotus Insight | Alzheimer Research",
-    layout="wide",
+    page_title="CHẠM Hub | Thấu hiểu để kết nối – Không ai phải đi một mình",
     page_icon="🪷",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS phong cách chuẩn CHẠM (Navy, Xanh lá chăm sóc, Cam ấm, Tông nền nhẹ nhàng)
+st.markdown("""
+<style>
+    .main {
+        background-color: #FAF9F6;
+    }
+    h1, h2, h3 {
+        color: #18324A;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .cham-card {
+        background-color: #FFFFFF;
+        padding: 24px;
+        border-radius: 14px;
+        border-left: 6px solid #55A88B;
+        box-shadow: 0 4px 12px rgba(24, 50, 74, 0.06);
+        margin-bottom: 20px;
+    }
+    .cham-card-warm {
+        background-color: #FFFDF9;
+        padding: 24px;
+        border-radius: 14px;
+        border-left: 6px solid #D18A55;
+        box-shadow: 0 4px 12px rgba(209, 138, 85, 0.08);
+        margin-bottom: 20px;
+    }
+    .cham-quote {
+        background-color: #E0F0E8;
+        color: #18324A;
+        padding: 20px 26px;
+        border-radius: 12px;
+        font-style: italic;
+        font-size: 1.08em;
+        border: 1px solid #55A88B;
+        margin: 18px 0;
+    }
+    .badge-nc { background-color: #DCEAF5; color: #18324A; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
+    .badge-cs { background-color: #E0F0E8; color: #2D6A4F; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
+    .badge-cd { background-color: #FCE8D5; color: #9C5221; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
+    .badge-cn { background-color: #E8E2F4; color: #5B4E8C; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
+</style>
+""", unsafe_allow_html=True)
+
+# ==============================================================================
+# 2. MÀN HÌNH CHÀO MỪNG (INTRO SPLASH SCREEN)
+# ==============================================================================
 if 'visited' not in st.session_state:
     intro_placeholder = st.empty()
     with intro_placeholder.container():
-        st.markdown(
-            """
+        st.markdown("""
             <style>
-            @keyframes floatUpSlow {
-                0% { transform: translateY(100vh) scale(0.7); opacity: 0; }
-                20% { opacity: 1; }
-                80% { opacity: 1; }
-                100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+            @keyframes floatUp {
+                0% { transform: translateY(40px) scale(0.9); opacity: 0; }
+                50% { opacity: 1; }
+                100% { transform: translateY(-20px) scale(1.05); opacity: 1; }
             }
-            @keyframes floatLeaf {
-                0% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
-                20% { opacity: 0.8; }
-                50% { transform: translateY(50vh) translateX(50px) rotate(45deg); }
-                100% { transform: translateY(-100vh) translateX(-50px) rotate(90deg); opacity: 0; }
-            }
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-            .lotus-overlay {
+            .splash-screen {
                 position: fixed;
                 top: 0; left: 0; width: 100vw; height: 100vh;
-                background-color: white;
+                background: linear-gradient(135deg, #18324A 0%, #2C5E8A 50%, #55A88B 100%);
                 z-index: 9999;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                overflow: hidden;
-            }
-            .main-icons {
-                font-size: 130px;
-                animation: floatUpSlow 5s ease-in-out forwards;
-                filter: drop-shadow(0 0 15px rgba(255, 105, 180, 0.4));
-            }
-            .leaf {
-                position: absolute;
-                font-size: 50px;
-                animation: floatLeaf 6s ease-in-out infinite;
-                opacity: 0;
-            }
-            .lotus-text {
-                margin-top: 50px;
-                color: #FF69B4;
-                font-family: 'Segoe UI', Arial, sans-serif;
-                font-weight: bold;
-                font-size: 28px;
-                letter-spacing: 3px;
+                color: white;
                 text-align: center;
-                animation: fadeIn 2s ease-out 1s both;
+                padding: 20px;
+            }
+            .splash-icon {
+                font-size: 110px;
+                animation: floatUp 2.5s ease-out forwards;
+            }
+            .splash-title {
+                font-size: 46px;
+                font-weight: 800;
+                letter-spacing: 6px;
+                margin-top: 15px;
+            }
+            .splash-sub {
+                font-size: 21px;
+                color: #F2C66D;
+                margin-top: 10px;
+                font-weight: 500;
             }
             </style>
-            
-            <div class="lotus-overlay">
-                <div class="leaf" style="left: 15%; animation-delay: 0s;">🍃</div>
-                <div class="leaf" style="left: 80%; animation-delay: 1.5s;">🍃</div>
-                <div class="main-icons">🪷 🧬</div>
-                <div class="lotus-text">NỀN TẢNG TIN SINH HỌC TÍCH HỢP DỮ LIỆU VÀ MÔ PHỎNG ĐỘNG HỌC ALKALOTUS INSIGHT</div>
+            <div class="splash-screen">
+                <div class="splash-icon">🪷 🤝</div>
+                <div class="splash-title">DỰ ÁN CHẠM</div>
+                <div class="splash-sub">THẤU HIỂU ĐỂ KẾT NỐI – KẾT NỐI ĐỂ SẺ CHIA</div>
+                <p style="margin-top: 25px; opacity: 0.85; font-size: 16px;">"Không ai phải đi một mình trên hành trình đối diện với Alzheimer"</p>
             </div>
-            """, 
-            unsafe_allow_html=True 
-        )
-        time.sleep(5)
+        """, unsafe_allow_html=True)
+        time.sleep(3)
     intro_placeholder.empty()
     st.session_state['visited'] = True
 
-
-st.title("🪷 AlkaLotus Insight")
-st.markdown("<p style='font-size: 1.15em; color: #555; font-style: italic; margin-top: -15px; line-height: 1.4;'>Nền tảng tin sinh học tích hợp dữ liệu và mô phỏng động học chiết tách Alkaloid lá sen hướng đích enzyme AChE và BACE1 trong nghiên cứu Alzheimer</p>", unsafe_allow_html=True)
-st.divider()
-
-# --- 4. KHỞI TẠO DỮ LIỆU ---
-try:
-    from data import get_database
-    df = get_database()
-except ImportError:
-    # Backup nếu không tìm thấy file data.py (Dành cho chạy test)
-    df = pd.DataFrame({
-        'Name': ['Roemerine', 'Nuciferine'],
-        'MW': [279.33, 295.38],
-        'LogP': [3.1, 3.5],
-        'HBD': [0, 0],
-        'HBA': [3, 3],
-        'Formula': ['C18H17NO2', 'C19H21NO2']
-    })
-
-if 'selected_compound' not in st.session_state:
-    st.session_state.selected_compound = "Roemerine"
-
-# --- 5. SIDEBAR ---
-st.sidebar.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-
-logo_path = "AlkaLotus/logo.png"
-
-if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, width=250)
-else:
-    # Dự phòng nếu chạy từ bên trong thư mục AlkaLotus/
-    alt_path = "logo.png"
-    if os.path.exists(alt_path):
-        st.sidebar.image(alt_path, width=130)
-    else:
-        st.sidebar.error("Không tìm thấy tệp logo!")
-
-st.sidebar.markdown("</div>", unsafe_allow_html=True)
-st.sidebar.divider()
-
-st.sidebar.markdown(
-    """
-    <p style='font-size: 1em; font-weight: bold; color: #2E2E2E; margin-top: 5px; margin-bottom: 0px;'>
-        ALKALOTUS INSIGHT
-    </p>
-    <p style='font-size: 0.8em; color: #666;'>DỰ ÁN NGHIÊN CỨU KHOA HỌC NỀN TẢNG TIN SINH HỌC</p>
-    """, 
-    unsafe_allow_html=True
-)
-st.sidebar.markdown("</div>", unsafe_allow_html=True)
-st.sidebar.divider()
-
-st.sidebar.title("🪷 AlkaLotus Insight")
-st.sidebar.markdown("<div style='text-align: justify; font-size: 0.9em;'><b>Nền tảng tin sinh học</b>  tích hợp dữ liệu và mô phỏng động học chiết tách Alkaloid lá sen hướng đích enzyme AChE và BACE1 trong nghiên cứu Alzheimer.</div>", unsafe_allow_html=True)
-
-st.sidebar.divider()
-page = st.sidebar.radio(
-    "Danh mục hệ thống",
-    [
-        "1. Thư viện Alkaloid",
-        "2. Mô phỏng Docking 3D",
-        "3. Phân tích & Xuất báo cáo",
-        "4. Phân tích Cấu trúc (Toán)",
-        "5. Tối ưu Dung môi (Toán)",
-        "6. Động học Chiết tách (Toán)",
-        "7. Dự toán Quy mô & Kinh tế (Toán)"
+# Khởi tạo dữ liệu lưu trữ mở rộng trong session_state
+if 'community_notes' not in st.session_state:
+    st.session_state['community_notes'] = [
+        {"author": "Minh Thư (Học sinh lớp 11)", "role": "Người chơi trải nghiệm CHẠM", "msg": "Trước đây mình hay gắt gỏng mỗi khi bà hỏi đi hỏi lại một câu. Sau khi chơi bàn cờ CHẠM và đọc phần trải nghiệm góc nhìn, mình mới hiểu bà không cố tình làm phiền mà vì ký ức của bà đang rơi rụng từng ngày."},
+        {"author": "Cô Thanh Hương", "role": "Người chăm sóc gia đình", "msg": "Cảm ơn dự án đã nói lên tiếng lòng của những người chăm sóc. Đôi khi chúng tôi không cần lời khuyên y khoa cao siêu, chỉ cần một câu hỏi thăm: 'Hôm nay bạn có mệt không?' là đủ ấm lòng."},
+        {"author": "Hoàng Nam", "role": "Tình nguyện viên cộng đồng", "msg": "Thông điệp 'Không ai phải đi một mình' thực sự chạm đến trái tim. Mong bộ board game này sẽ sớm có mặt tại các trường học và nhà văn hóa."}
     ]
-)
-st.sidebar.divider()
-st.sidebar.caption("👨‍ Học sinh: **Quách Gia An**")
-st.sidebar.caption("🏫 Đơn vị: **Chuyên sử Khóa 30 - THPT Chuyên Hùng Vương**")
 
-# --- 6. MODULE 1: DATABASE EXPLORER (BẢN NÂNG CẤP) ---
-if page == "1. Thư viện Alkaloid":
-    st.title("📚 Thư viện số hóa Alkaloid")
-    
-    # --- PHẦN HƯỚNG DẪN TỔNG QUAN ---
-    with st.sidebar:
-        st.header("📖 Hướng dẫn Module 1")
-        st.info("""
-        **Mục tiêu:** Tra cứu và sàng lọc các Alkaloid từ Sen dựa trên các tiêu chuẩn hóa dược quốc tế.
-        
-        **Các bước thực hiện:**
-        1. **Lọc dữ liệu:** Sử dụng bộ lọc Lipinski để chọn ra các chất có khả năng làm thuốc cao nhất.
-        2. **Quan sát Heatmap:** Tìm các ô màu hồng đậm - đó là các chất có ái lực liên kết mạnh nhất với Enzyme.
-        3. **Chọn chất:** Chọn 1 hợp chất cụ thể để hệ thống ghi nhớ và phân tích sâu ở Module sau.
-        """)
+if 'caregiver_journal' not in st.session_state:
+    st.session_state['caregiver_journal'] = []
 
-    if 'MW' in df.columns:
-        df = df.rename(columns={'MW': 'Molecular Weight'})
+# ==============================================================================
+# 3. THANH ĐIỀU HƯỚNG BÊN TRÁI (SIDEBAR)
+# ==============================================================================
+with st.sidebar:
+    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+    if os.path.exists("AlkaLotus/logo.png"):
+        st.image("AlkaLotus/logo.png", width=180)
+    elif os.path.exists("logo.png"):
+        st.image("logo.png", width=180)
+    else:
+        st.markdown("<h1 style='text-align:center; color:#18324A; margin-bottom:0;'>🪷 CHẠM</h1>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    # --- HƯỚNG DẪN VỀ QUY TẮC LIPINSKI ---
-    st.subheader("🔍 Bộ lọc sàng lọc thuốc thông minh")
-    with st.expander("❓ Quy tắc Lipinski (Rule of 5) là gì?", expanded=False):
-        st.write("""
-        Đây là quy tắc vàng trong hóa dược để đánh giá một hợp chất có khả năng hấp thụ tốt khi dùng đường uống hay không:
-        - **MW < 500:** Kích thước vừa phải để dễ di chuyển qua màng tế bào.
-        - **LogP < 5:** Độ tan trong dầu phù hợp để thấm qua màng chất béo.
-        - **HBD < 5 & HBA < 10:** Giới hạn liên kết Hydro để phân tử không quá cồng kềnh khi liên kết với nước.
-        """)
+    st.markdown("<p style='text-align:center; color:#55A88B; font-weight:bold; font-size:0.9em;'>THẤU HIỂU ĐỂ KẾT NỐI</p>", unsafe_allow_html=True)
+    st.divider()
 
-    # --- KHU VỰC BỘ LỌC ---
-    with st.container(border=True):
-        c1, c2, c3, c4 = st.columns(4)
-        mw_f = c1.checkbox("MW < 500", value=True, help="Lọc các phân tử nhỏ gọn")
-        lp_f = c2.checkbox("LogP < 5", value=True, help="Lọc các chất có độ tan dầu lý tưởng")
-        hbd_f = c3.checkbox("H-Donor < 5", value=True)
-        hba_f = c4.checkbox("H-Acceptor < 10", value=True)
-    
-    filtered_df = df.copy()
-    
-    if mw_f: filtered_df = filtered_df[filtered_df['Molecular Weight'] < 500]
-    if lp_f: filtered_df = filtered_df[filtered_df['LogP'] < 5]
-    if hbd_f: filtered_df = filtered_df[filtered_df['HBD'] < 5]
-    if hba_f: filtered_df = filtered_df[filtered_df['HBA'] < 10]
-    
-    st.dataframe(
-        filtered_df[['Name', 'Formula', 'Molecular Weight', 'LogP', 'HBD', 'HBA']], 
-        use_container_width=True,
-        column_config={
-            "Name": "Tên hợp chất",
-            "Formula": "Công thức",
-            "Molecular Weight": st.column_config.NumberColumn("MW", format="%.2f g/mol")
-        }
+    menu = st.radio(
+        "🧭 KHÁM PHÁ KHÔNG GIAN CHẠM:",
+        [
+            "🏠 1. Trang chủ & Tổng quan Dự án",
+            "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý",
+            "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm",
+            "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn",
+            "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ mở rộng)",
+            "🧠 6. Thử thách Phá bỏ Định kiến (Interactive Quiz)",
+            "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần",
+            "📚 8. Tài nguyên Nghiên cứu & Thư viện Tài liệu",
+            "💌 9. Bức tường Sẻ chia & Kết nối Cộng đồng"
+        ]
     )
 
-    # --- TÍNH NĂNG 1: HEATMAP PHÂN TÍCH TỔNG QUAN ---
-    st.markdown("### 🌡️ Phân tích Ái lực liên kết (Binding Affinity)")
-    st.caption("🔍 **Hướng dẫn:** Biểu đồ này so sánh khả năng ức chế của các chất lên 2 đích đến Alzheimer (AChE và BACE1).")
-    
-    if not filtered_df.empty:
-        heatmap_data = filtered_df[['Name', 'dG_BACE1', 'dG_AChE']].set_index('Name')
-        
-        fig_heat = px.imshow(
-            heatmap_data.T, 
-            labels=dict(x="HỢP CHẤT", y="MỤC TIÊU", color="ΔG (kcal/mol)"),
-            color_continuous_scale='RdPu_r', 
-            text_auto=True, 
-            aspect="auto"
-        )
-        
-        fig_heat.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_heat, use_container_width=True)
-        st.info("💡 **Các chất có số âm lớn (màu hồng đậm) đó là những ứng viên có tiềm năng ức chế enzyme cao nhất.")
-    else:
-        st.warning("⚠️ Không có hợp chất nào thỏa mãn bộ lọc hiện tại. Hãy nới lỏng các điều kiện Lipinski.")
-
     st.divider()
+    st.markdown("""
+    <div style='background-color:#E0F0E8; padding:12px; border-radius:10px; font-size:0.85em; color:#18324A;'>
+        <b>📌 Bạn đang chơi Board Game CHẠM?</b><br>
+        Sử dụng Mục <b>5 (Trạm Tương tác)</b> để rút thẻ ngẫu nhiên và mở rộng tình huống ngay trong ván chơi!
+    </div>
+    """, unsafe_allow_html=True)
+    st.caption("Dự án Giáo dục & Cộng đồng CHẠM • Phiên bản Mở rộng 2026")
 
-    # --- CHỌN HỢP CHẤT MỤC TIÊU (ĐÃ FIX LỖI ĐỒNG BỘ) ---
-    st.subheader("🎯 Chọn đối tượng nghiên cứu")
-    compounds = df['Name'].tolist()
+# ==============================================================================
+# MODULE 1: TRANG CHỦ & TỔNG QUAN DỰ ÁN
+# ==============================================================================
+if menu == "🏠 1. Trang chủ & Tổng quan Dự án":
+    st.title("🪷 CHẠM — Hành Trình Đánh Thức Sự Thấu Cảm")
+    st.markdown("#### *“Alzheimer có thể lấy đi những ký ức trong tâm trí, nhưng không bao giờ có thể lấy đi nhu cầu được yêu thương và tôn trọng của một con người.”*")
     
-    # Đoạn fix lỗi: Kiểm tra nếu chất trong session_state không còn tồn tại trong list mới
-    if st.session_state.selected_compound not in compounds:
-        st.session_state.selected_compound = compounds[0]
-        
-    current_idx = compounds.index(st.session_state.selected_compound)
-    
-    choice = st.selectbox("Chọn hợp chất để chuyển tiếp dữ liệu sang Module sau:", 
-                          compounds, index=current_idx)
-    
-    if choice != st.session_state.selected_compound:
-        st.session_state.selected_compound = choice
-        st.success(f"Đã chọn **{choice}**. Dữ liệu đã sẵn sàng ở các Module sau!")
-        st.rerun() # Quan trọng: Ép app load lại để Module 2 nhận chất mới ngay lập tức
-# --- MODULE 2: VIRTUAL DOCKING LAB (BẢN NÂNG CẤP GIAO DIỆN) ---
-elif page == "2. Mô phỏng Docking 3D":
-    st.title("🔬 Virtual Docking Lab (In Silico)")
+    st.markdown("""
+    <div class="cham-quote">
+        Dự án <b>CHẠM</b> kết hợp hoàn hảo giữa <b>Board Game giáo dục thực tế (64 ô hành trình chiến lược)</b> và 
+        <b>Nền tảng số trực tuyến</b>, quy tụ 4 trụ cột liên ngành: <b>Nghiên cứu – Công nghệ – Chăm sóc – Cộng đồng</b> 
+        nhằm xóa bỏ sự kỳ thị, lan tỏa tri thức và đồng hành cùng người mắc bệnh Alzheimer và gia đình họ.
+    </div>
+    """, unsafe_allow_html=True)
 
-    # --- SIDEBAR HƯỚNG DẪN THAO TÁC 3D ---
-    with st.sidebar:
-        st.header("🎮 Điều khiển Mô hình 3D")
-        st.info("""
-        **Thao tác chuột:**
-        - **Xoay:** Nhấn giữ chuột trái và di chuyển.
-        - **Phóng to/Thu nhỏ:** Sử dụng con lăn chuột.
-        - **Di chuyển (Pan):** Nhấn giữ chuột phải.
-        
-        **Giải thích màu sắc:**
-        - **Protein (Dải xoắn):** Cấu trúc Enzyme đích.
-        - **Ligand (Que):** Hợp chất Alkaloid đang thử nghiệm.
-        - **Vùng sáng:** Binding Site (Túi liên kết).
-        """)
-        st.divider()
-        st.caption("Dữ liệu trích xuất từ Bảng 2 & Chương 2 - Báo cáo Nghiên cứu 2026.")
+    st.subheader("📊 Bức tranh toàn cảnh: Sa sút trí tuệ & Thách thức toàn cầu")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Người mắc toàn cầu", "55+ Triệu", "Tăng 10 triệu ca mới/năm")
+    c2.metric("Tỷ lệ do Alzheimer", "60% – 70%", "Nguyên nhân hàng đầu")
+    c3.metric("Tại Việt Nam (Ước tính)", "~500.000+", "Gia tăng mạnh theo già hóa dân số")
+    c4.metric("Người chịu ảnh hưởng", "150+ Triệu", "Gia đình và người chăm sóc")
 
-    # DATABASE GỐC CỦA AN (Đảm bảo được đặt ở đây để không bao giờ bị None)
-    alkaloid_db = {
-        "Nuciferine": {"BACE1": {"dg": -8.3, "amin": "Asp32", "stab": 75}, "AChE": {"dg": -8.2, "amin": "Trp286", "stab": 70}},
-        "Nornuciferine": {"BACE1": {"dg": -8.3, "amin": "Gly120", "stab": 72}, "AChE": {"dg": -8.1, "amin": "Tyr124", "stab": 68}},
-        "Roemerine": {"BACE1": {"dg": -9.0, "amin": "Asp32/Asp228", "stab": 88}, "AChE": {"dg": -8.6, "amin": "Trp286", "stab": 90}},
-        "Pronuciferine": {"BACE1": {"dg": -8.6, "amin": "Ser203", "stab": 78}, "AChE": {"dg": -8.6, "amin": "Phe338", "stab": 80}},
-        "Liensinine": {"BACE1": {"dg": -9.6, "amin": "Asp32", "stab": 95}, "AChE": {"dg": -7.5, "amin": "His447", "stab": 65}},
-        "Neferine": {"BACE1": {"dg": -9.0, "amin": "Tyr124", "stab": 85}, "AChE": {"dg": -7.5, "amin": "Trp286", "stab": 62}},
-        "Isoliensinine": {"BACE1": {"dg": -9.6, "amin": "Asp32/Asp228", "stab": 96}, "AChE": {"dg": -7.7, "amin": "Trp286", "stab": 72}}
-    }
-    controls = {
-        "BACE1": {"name": "Verubecestat", "dg": -8.5},
-        "AChE": {"name": "Donepezil", "dg": -7.9}
-    }
-
-    tab_view, tab_compare = st.tabs(["🔍 Chi tiết tương tác 3D", "⚖️ So sánh đối chứng (Benchmarking)"])
-
-    with tab_view:
-        st.subheader("🖥️ Trình diễn tương tác phân tử")
-        st.caption("Chọn mục tiêu và hợp chất để quan sát cách Alkaloid 'khóa' các Enzyme gây bệnh Alzheimer.")
-
-        target = st.radio("Chọn Enzyme mục tiêu:", ["BACE1 (Protein 4XXS)", "AChE (Protein 7D9O)"], horizontal=True)
-        p_key = "BACE1" if "BACE1" in target else "AChE"
-        pdb_id = "4XXS" if p_key == "BACE1" else "7D9O"
-        
-        # ĐOẠN FIX LỖI TYPEERROR QUAN TRỌNG:
-        selected = st.session_state.get('selected_compound', 'Roemerine')
-        if selected not in alkaloid_db:
-            selected = list(alkaloid_db.keys())[0] # Tự lấy chất đầu tiên nếu lỗi
-        
-        data = alkaloid_db[selected][p_key]
-
-        c1, c2 = st.columns([1, 2.5])
-        with c1:
-            with st.container(border=True):
-                st.markdown(f"### 🧪 {selected}")
-                st.write(f"Đích đến: **{p_key}**")
-                hl = st.toggle("Hiện Binding Site", value=True, help="Làm nổi bật túi liên kết nơi Alkaloid tác động.")
-                
-                st.divider()
-                st.markdown("**📊 Chỉ số năng lượng:**")
-                st.metric("Năng lượng ΔG", f"{data['dg']} kcal/mol", 
-                          help="Giá trị càng âm, liên kết càng bền vững và hiệu quả ức chế càng cao.")
-                
-                st.write(f"📍 **Acid amin chính:** `{data['amin']}`")
-                st.progress(data['stab']/100, text=f"Độ bền phức hợp: {data['stab']}%")
-                
-                if "Asp32" in data['amin']:
-                    st.success("🎯 **Cơ chế:** Khóa cặp Asp xúc tác, ngăn chặn hình thành mảng bám Amyloid.")
-                elif "Trp286" in data['amin']:
-                    st.success("🎯 **Cơ chế:** Tương tác tại vùng PAS, ngăn chặn sự tích tụ Acetylcholine.")
-
-        with c2:
-            with st.container(border=True):
-                with st.spinner("Đang kết nối thư viện PDB và kết xuất mô hình 3D..."):
-                    pdb_string = fetch_pdb(pdb_id)
-                    if pdb_string:
-                        showmol(render_3d_molecule(pdb_string, highlight_site=hl), height=500, width=700)
-                st.caption(f"Mô hình cấu trúc tinh thể Protein {pdb_id} tương tác với {selected}")
-
-    with tab_compare:
-        st.subheader("⚖️ Đối chiếu hiệu quả với thuốc chuẩn")
-        st.write("So sánh năng lượng liên kết của Alkaloid tự nhiên với các thuốc điều trị hiện hành.")
-
-        comp_p = st.radio("Protein đối chứng:", ["BACE1", "AChE"], horizontal=True, key="comp_p")
-        control_data = controls[comp_p]
-        
-        with st.container(border=True):
-            # Đồng bộ lại selectbox đối chứng
-            selected_comp = st.selectbox("Chọn Alkaloid để đối chứng:", list(alkaloid_db.keys()), 
-                                         index=list(alkaloid_db.keys()).index(selected) if selected in alkaloid_db else 0)
-            
-            user_dg = alkaloid_db[selected_comp][comp_p]['dg']
-            
-            col1, col2 = st.columns(2)
-            col1.metric(f"Alkaloid: {selected_comp}", f"{user_dg} kcal/mol")
-            col2.metric(f"Thuốc: {control_data['name']}", f"{control_data['dg']} kcal/mol", 
-                        delta=round(user_dg - control_data['dg'], 2), delta_color="inverse")
-            
-            if user_dg < control_data['dg']:
-                st.success(f"💡 **Phân tích:** {selected_comp} có năng lượng tự do thấp hơn, cho thấy ái lực liên kết mạnh hơn thuốc {control_data['name']}.")
-            
-        st.markdown("#### Đồ thị so sánh ái lực (Affinity Comparison)")
-        chart_data = pd.DataFrame({
-            "Hợp chất": [selected_comp, control_data['name']],
-            "Năng lượng (kcal/mol)": [abs(user_dg), abs(control_data['dg'])]
+    col_chart, col_info = st.columns([1.3, 1])
+    with col_chart:
+        st.markdown("##### 📈 Dự báo xu hướng gia tăng số ca mắc toàn cầu (Triệu người)")
+        df_trend = pd.DataFrame({
+            "Năm": ["2020", "2030 (Dự báo)", "2050 (Dự báo)"],
+            "Số lượng (Triệu người)": [55, 78, 139]
         })
-        st.bar_chart(chart_data.set_index("Hợp chất"))
-        st.caption("Lưu ý: Giá trị trị tuyệt đối càng cao thể hiện khả năng gắn kết càng tốt.")
-# --- MODULE 3: PHÂN TÍCH & XUẤT BÁO CÁO ---
-if page == "3. Phân tích & Xuất báo cáo":
-    st.title("📊 Phân tích Kết quả & Xuất báo cáo")
-    
-    with st.sidebar:
-        st.header("📋 Hướng dẫn Module 3")
-        st.info("""
-        **1. Kiểm tra dược tính:** Xem các chỉ số MW, LogP để đối chiếu với quy tắc Lipinski.
-        **2. Đọc Radar Chart:** Các đỉnh càng chạm rìa ngoài thì dược tính tại điểm đó càng mạnh.
-        **3. Xuất báo cáo:** Nhấn nút Tải để lưu kết quả nghiên cứu dưới dạng file .txt.
-        """)
-
-    if 'selected_compound' not in st.session_state:
-        st.session_state.selected_compound = df['Name'].iloc[0]
-        
-    selected_data = df[df['Name'] == st.session_state.selected_compound].iloc[0]
-    
-    st.subheader(f"Thông tin chi tiết hợp chất: {selected_data['Name']}")
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Công thức hóa học", selected_data['Formula'])
-    c2.metric("Khối lượng (MW)", f"{selected_data['MW']} Da")
-    c3.metric("Độ ưa dầu (LogP)", selected_data['LogP'])
-    st.write("---")
-    st.metric("Đánh giá Drug-likeness", classify_potential(selected_data['dG_BACE1']))
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    col_left, col_right = st.columns([1, 1]) 
-    with col_left:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.subheader("🎯 Năng lượng liên kết (Affinity)")
-        st.metric("BACE1 ΔG", f"{selected_data['dG_BACE1']} kcal/mol", delta="-8.5 (Veru)", delta_color="inverse")
-        st.metric("AChE ΔG", f"{selected_data['dG_AChE']} kcal/mol", delta="-7.9 (Done)", delta_color="inverse")
-        st.caption("💡 *Ghi chú:* Chỉ số âm càng cao thể hiện khả năng gắn kết càng mạnh.")
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        bbb_text = "TÍCH CỰC (Có khả năng tác động TW)" if selected_data['BBB_Permeability'] else "HẠN CHẾ (Khả năng xuyên thấp)"
-        if selected_data['BBB_Permeability']: 
-            st.success(f"✅ **Rào máu não (BBB):** {bbb_text}")
-        else: 
-            st.warning(f"⚠️ **Rào máu não (BBB):** {bbb_text}")
-
-    with col_right:
-        st.markdown('<div class="card" style="height: 100%;">', unsafe_allow_html=True)
-        st.subheader("🕸️ Hồ sơ ADMET Radar")
-        st.plotly_chart(create_admet_radar(selected_data), use_container_width=True)
-        st.caption("🔍 **Radar Chart:** Đánh giá tính chất dược động học đa chiều.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("---")
-    
-    # --- PHẦN NỘI DUNG BÁO CÁO (ĐÃ KHÔI PHỤC ĐẦY ĐỦ) ---
-    current_time = time.strftime("%d/%m/%Y %H:%M:%S")
-    report_text = f"""======================================================================
-             BÁO CÁO PHÂN TÍCH DƯỢC TÍNH PHÂN TỬ - ALKALOTUS PREDICTOR
-======================================================================
-Dự án: Nghiên cứu In Silico dẫn xuất Alkaloid từ lá sen điều trị Alzheimer
-Tác giả: Quách Gia An
-Đơn vị: Lớp 10 chuyên Sử khóa 30 - Trường THPT Chuyên Hùng Vương
-Thời gian trích xuất: {current_time}
-
-----------------------------------------------------------------------
-I. THÔNG TIN HỢP CHẤT (COMPOUND IDENTIFICATION)
-----------------------------------------------------------------------
-- Tên hợp chất: {selected_data['Name']}
-- Công thức hóa học: {selected_data['Formula']}
-
-----------------------------------------------------------------------
-II. THÔNG SỐ HÓA LÝ & QUY TẮC LIPINSKI (DRUG-LIKENESS)
-----------------------------------------------------------------------
-1. Khối lượng phân tử (MW): {selected_data['MW']} g/mol
-2. Hệ số phân bố (LogP): {selected_data['LogP']}
-3. Số liên kết H-Donor (HBD): {selected_data['HBD']}
-4. Số liên kết H-Acceptor (HBA): {selected_data['HBA']}
-=> ĐÁNH GIÁ CHUNG: TUÂN THỦ quy tắc Lipinski để đảm bảo khả năng hấp thụ đường uống.
-
-----------------------------------------------------------------------
-III. KẾT QUẢ MÔ PHỎNG DOCKING PHÂN TỬ (BINDING AFFINITY)
-----------------------------------------------------------------------
-* Mục tiêu 1: Enzyme BACE1 -> Năng lượng tự do Gibbs ΔG: {selected_data['dG_BACE1']} kcal/mol
-* Mục tiêu 2: Enzyme AChE -> Năng lượng tự do Gibbs ΔG: {selected_data['dG_AChE']} kcal/mol
-=> Nhận xét: Hợp chất có ái lực mạnh, khả năng ức chế enzyme mục tiêu cao.
-
-----------------------------------------------------------------------
-IV. DƯỢC ĐỘNG HỌC & ĐỘ AN TOÀN (ADMET)
-----------------------------------------------------------------------
-- Khả năng xuyên rào máu não (BBB): {bbb_text}
-- Khả năng hấp thu qua ruột người (HIA): Cao
-- Độc tính: Không gây độc tính cấp tính trong ngưỡng mô phỏng.
-
-======================================================================
-KẾT LUẬN: Hợp chất {selected_data['Name']} là ứng viên tiềm năng trong việc
-phát triển các liệu pháp điều trị Alzheimer từ thảo dược tự nhiên.
-======================================================================
-"""
-    st.header("🔬 Xuất bản kết quả")
-    st.download_button(label="📥 TẢI BÁO CÁO CHI TIẾT (.TXT)", 
-                       data=report_text, 
-                       file_name=f"AlkaLotus_Report_{selected_data['Name']}.txt", 
-                       mime="text/plain")
-
-    st.header("🔬 Kiểm chứng độ tin cậy mô hình (Validation)")
-    st.info("Bảng đối chiếu giữa kết quả dự đoán từ phần mềm và dữ liệu thực nghiệm lâm sàng từ các nguồn uy tín.")
-    real_data = {
-        "Hợp chất": ["Neferine", "Isoliensinine", "Liensinine", "Nuciferine"],
-        "Thực nghiệm (IC50)": ["2.16 µM", "5.45 µM", "6.08 µM", "45.20 µM"],
-        "Dự đoán AI (kcal/mol)": ["-10.2", "-9.1", "-8.9", "-7.8"],
-        "Độ tương quan": ["Khớp mạnh nhất ✅", "Chính xác ✅", "Chính xác ✅", "Chính xác ✅"],
-        "Nguồn": ["PMID: 25442253", "PMID: 25442253", "PMID: 25442253", "Elsevier 2015"]
-    }
-    st.table(pd.DataFrame(real_data))
-
-elif page == "4. Phân tích Cấu trúc (Toán)":
-    with st.sidebar:
-        st.header("📖 Hướng dẫn Module 4")
-        st.info("""
-        **Mục tiêu:** Đánh giá độ tương đồng cấu trúc (SAR) bằng thuật toán Tanimoto.
-        1. **Chọn tham chiếu:** Chọn 1 trong 7 hoạt chất lá sen làm gốc.
-        2. **Điều chỉnh ngưỡng:** Lọc các phân tử có độ tương đồng mong muốn.
-        3. **Biện luận:** Xác định các hoạt chất có cấu trúc tương đồng cao nhất.
-        """)
-    
-    from rdkit import Chem
-    from rdkit import DataStructs
-    from rdkit.Chem import AllChem
-
-    st.title("🧬 Phân tích Độ tương đồng Cấu trúc")
-    st.markdown("Sử dụng thuật toán **Tanimoto Similarity** để phân tích mối quan hệ cấu trúc - hoạt tính (SAR).")
-
-    # 1. Cơ sở dữ liệu 7 Alkaloid lá sen (Thống nhất với danh mục dự án)
-    alkaloids = {
-        "Nuciferine": "CN(C)CCC1=CC2=C(C=C1)C3=C(CC2)C=CC(=C3)OC",
-        "Nornuciferine": "CN1CCC2=CC3=C(C=C2C1CC4=CC=C(O)C=C4)OC", 
-        "Roemerine": "CN1CCC2=CC3=C(C=C2C1CC4=C3C(=O)O4)OC",
-        "Pronuciferine": "CN1CCC2=C(C1)C3=C(C=C2)C=CC(=C3O)OC",
-        "Liensinine": "COC1=CC=C(C=C1)CC2CCC3=C(C2)C=CC(=C3)OC4=CC=C(C=C4)CC5CCC6=C(C5)C(=CC(=C6)O)OC",
-        "Neferine": "CN1CCC2=CC(=C(C=C2C1CC3=CC=C(C=C3)OC)OC)OC4=CC=C(C=C4)CC5CCC6=C(C5)C(=CC(=C6)OC)OC",
-        "Isoliensinine": "COC1=CC=C(C=C1)CC2CCC3=C(C2)C=CC(=C3)OC4=CC=C(C=C4)CC5CCC6=C(C5)C(=CC(=C6)O)OC"
-    }
-
-    # 2. Xử lý Fingerprints
-    fps = {}
-    valid_names = []
-    
-    for name, smi in alkaloids.items():
-        mol = Chem.MolFromSmiles(smi)
-        if mol is not None:
-            # Tạo Fingerprint Morgan đường kính 2, 1024 bits
-            fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
-            fps[name] = fp
-            valid_names.append(name)
-        else:
-            st.warning(f"⚠️ Cấu trúc {name} không hợp lệ, bỏ qua.")
-
-    # 3. Giao diện điều khiển
-    if len(valid_names) >= 2:
-        col1, col2 = st.columns(2)
-        with col1:
-            ref_mol = st.selectbox("Chọn phân tử tham chiếu:", valid_names)
-        with col2:
-            threshold = st.slider("Ngưỡng tương đồng (Tanimoto cutoff):", 0.0, 1.0, 0.3)
-
-        # 4. Tính toán Tanimoto Similarity
-        similarities = {name: DataStructs.TanimotoSimilarity(fps[ref_mol], fps[name]) for name in valid_names}
-        df_sim = pd.DataFrame.from_dict(similarities, orient='index', columns=['Score']).sort_values(by='Score', ascending=False)
-
-        # 5. Trực quan hóa kết quả (Plotly Bar Chart)
-        fig = px.bar(df_sim, x=df_sim.index, y='Score', color='Score', 
-                     color_continuous_scale='Viridis', title=f"Độ tương đồng với {ref_mol}")
-        fig.add_hline(y=threshold, line_dash="dash", line_color="red")
+        fig = px.bar(
+            df_trend, x="Năm", y="Số lượng (Triệu người)",
+            text="Số lượng (Triệu người)",
+            color="Năm",
+            color_discrete_sequence=["#3979B9", "#55A88B", "#D18A55"]
+        )
+        fig.update_traces(textposition="outside", textfont_size=14)
+        fig.update_layout(showlegend=False, height=340, margin=dict(t=20, b=20, l=20, r=20), plot_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig, use_container_width=True)
 
-        # 6. Biện luận SAR
-        st.subheader("🔍 Phân tích SAR (Structure-Activity Relationship)")
-        matches = df_sim[df_sim['Score'] >= threshold]
-        st.write(f"- Có **{len(matches)-1}** phân tử khác có cấu trúc tương đồng với {ref_mol} trên ngưỡng {threshold}.")
-        
-        # Xem ma trận chi tiết
-        with st.expander("📊 Xem ma trận tương đồng chi tiết"):
-            matrix = [[DataStructs.TanimotoSimilarity(fps[a], fps[b]) for b in valid_names] for a in valid_names]
-            mat_df = pd.DataFrame(matrix, index=valid_names, columns=valid_names)
-            st.dataframe(mat_df.style.background_gradient(cmap="Greens"), use_container_width=True)
-    else:
-        st.error("Không đủ dữ liệu cấu trúc hợp lệ để thực hiện phân tích.")
-elif page == "5. Tối ưu Dung môi (Toán)":
-    with st.sidebar:
-        st.header("📖 Hướng dẫn Module 5")
-        st.info("""
-        **Mục tiêu:** Dự đoán độ tan của Alkaloid trong hỗn hợp dung môi dựa trên lý thuyết Hansen.
-        
-        **Các bước thực hiện:**
-        1. **Chọn Alkaloid:** Chọn đối tượng cần chiết xuất.
-        2. **Chọn dung môi:** Chọn các dung môi muốn phối trộn.
-        3. **Điều chỉnh tỷ lệ:** Sử dụng thanh trượt để thay đổi phần trăm từng dung môi.
-        4. **Đọc chỉ số:** Ra càng gần 0 và chỉ số hòa tan > 80% là hỗn hợp tối ưu.
-        """)
-    st.title("🧪 Hệ thống Tối ưu hóa Dung môi Hansen")
-    st.markdown("Sử dụng **Khoảng cách Hansen (Hansen Solubility Parameters - HSP)** để dự đoán độ tan Alkaloid trong hỗn hợp dung môi đa thành phần.")
-
-    # 1. Cơ sở dữ liệu dung môi
-    solvents = {
-        "Ethanol": [15.8, 8.8, 19.4],
-        "Nước": [15.5, 16.0, 42.3],
-        "Acetone": [15.5, 10.4, 7.0],
-        "Methanol": [14.7, 12.3, 22.3],
-        "Ethyl Acetate": [15.8, 5.3, 7.2]
-    }
-
-    target_alkaloid = st.selectbox("Chọn Alkaloid mục tiêu:", ["Nuciferine", "Roemerine", "Liensinine"])
-    target_coords = {"Nuciferine": [18.5, 6.2, 5.1], "Roemerine": [18.2, 5.8, 4.8], "Liensinine": [19.1, 8.5, 12.3]}
-    t_hsp = target_coords[target_alkaloid]
-
-    # 2. Cấu hình hỗn hợp
-    st.subheader("🎛️ Thiết lập hỗn hợp dung môi")
-    sel_sols = st.multiselect("Chọn dung môi trong hỗn hợp:", list(solvents.keys()), default=["Ethanol", "Nước"])
-    
-    weights = {}
-    if sel_sols:
-        for s in sel_sols:
-            weights[s] = st.slider(f"Tỷ lệ {s} (%)", 0, 100, int(100/len(sel_sols)))
-        
-        total = sum(weights.values())
-        if total > 0:
-            weights = {k: v/total for k, v in weights.items()}
-            
-            # Tính toán thông số hỗn hợp
-            mix_hsp = np.zeros(3)
-            for s, w in weights.items():
-                mix_hsp += np.array(solvents[s]) * w
-            
-            # 3. Tính toán Khoảng cách Hansen (Ra) chuẩn xác
-            dist = np.sqrt(4*(mix_hsp[0]-t_hsp[0])**2 + (mix_hsp[1]-t_hsp[1])**2 + (mix_hsp[2]-t_hsp[2])**2)
-            
-            # --- CÔNG THỨC KHOA HỌC CHUẨN (HÀM GAUSSIAN) ---
-            # R0 là bán kính tương tác giả định của hợp chất mục tiêu (~8.0 units)
-            R0 = 8.0 
-            score = 100 * np.exp(- (dist**2) / (2 * (R0/2)**2))
-            # ------------------------------------------------
-
-            # 4. Hiển thị kết quả
-            st.divider()
-            c1, c2 = st.columns(2)
-            c1.metric("Khoảng cách Ra", f"{dist:.2f}", help="Khoảng cách Hansen (Ra) càng nhỏ, độ tương thích càng cao.")
-            c2.metric("Chỉ số hòa tan", f"{score:.1f}%")
-
-            # 5. Đồ thị Radar (Phân tích chuyên sâu)
-            st.subheader("📊 Phân tích độ tương thích (Hansen Profile)")
-            radar_df = pd.DataFrame({
-                'Thông số': ['Dispersion (dD)', 'Polar (dP)', 'H-Bond (dH)'],
-                'Mục tiêu': t_hsp,
-                'Hỗn hợp': mix_hsp
-            })
-            df_melted = radar_df.melt(id_vars='Thông số', var_name='Loại', value_name='Giá trị')
-            
-            fig = px.line_polar(df_melted, r='Giá trị', theta='Thông số', color='Loại', 
-                                line_close=True, markers=True, template="plotly_white")
-            fig.update_traces(fill='toself')
-            st.plotly_chart(fig, use_container_width=True)
-            st.caption("💡 **Nhận xét:** Diện tích hình 'Hỗn hợp' càng gần với 'Mục tiêu' thì độ tan càng lý tưởng.")
-
-            # 6. Lời khuyên thông minh
-            if score > 80:
-                st.balloons()
-                st.success(f"🎉 **Tối ưu:** Tỷ lệ này cực kỳ phù hợp để chiết xuất {target_alkaloid}!")
-            elif score < 40:
-                st.error("⚠️ **Cần điều chỉnh:** Dung môi hiện tại quá xa so với mục tiêu. Hãy thử thay đổi tỷ lệ hoặc loại dung môi khác.")
-elif page == "6. Động học Chiết tách (Toán)":
-    with st.sidebar:
-        st.header("📖 Hướng dẫn Module 6")
-        st.info("""
-        **Mục tiêu:** Mô phỏng quá trình chiết tách bằng mô hình toán học Pseudo-second-order.
-        
-        **Các bước thực hiện:**
-        1. **Thiết lập thông số:** Thay đổi Qe (dung lượng cực đại) và k2 (tốc độ chiết) từ bảng điều khiển bên trái.
-        2. **Quan sát biểu đồ:** Xem đường cong nồng độ tăng dần theo thời gian.
-        3. **Xác định t90:** Xem thời gian tối ưu để đạt 90% hiệu suất, giúp tiết kiệm thời gian và năng lượng vận hành.
-        """)
-    st.title("📈 Mô phỏng Động học & Vận tốc Chiết tách")
-    st.markdown("Sử dụng mô hình **Pseudo-second-order** để tối ưu hóa thời gian chiết xuất dược liệu.")
-
-    # 1. Cấu hình thông số thực nghiệm (Sidebar)
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("⚙️ Cài đặt thực nghiệm")
-    qe = st.sidebar.slider("Dung lượng tối đa (Qe - mg/g):", 5.0, 100.0, 25.0)
-    k2 = st.sidebar.slider("Hằng số vận tốc (k2 - g/mg.phút):", 0.001, 0.05, 0.015, step=0.001)
-
-    # 2. Xử lý thuật toán
-    time_steps = np.linspace(0, 200, 100) # Giảm số bước để bảng hiện vừa đủ, không quá dài
-    qt = (k2 * (qe ** 2) * time_steps) / (1 + k2 * qe * time_steps)
-    velocity = (k2 * (qe**2)) / ((1 + k2 * qe * time_steps)**2)
-
-    # 3. Dashboard hiển thị các thông số cốt lõi
-    col1, col2, col3 = st.columns(3)
-    t_90 = 9 / (k2 * qe)
-    col1.metric("Tốc độ ban đầu", f"{velocity[0]:.3f} mg/g.p")
-    col2.metric("Thời gian đạt 90% (t90)", f"{int(t_90)} phút")
-    col3.metric("Trạng thái", "Hiệu quả" if t_90 < 120 else "Chậm")
-
-    # 4. Đồ thị trực quan
-    fig = px.line(x=time_steps, y=qt, labels={'x': 'Thời gian (phút)', 'y': 'Nồng độ chiết (mg/g)'}, 
-                  title="Đường cong động học Pseudo-second-order")
-    fig.add_hline(y=qe, line_dash="dash", line_color="red", annotation_text="Giới hạn bão hòa (Qe)")
-    st.plotly_chart(fig, use_container_width=True)
-
-    # 5. Phân tích chuyên sâu
-    st.subheader("💡 Phân tích chiến lược")
-    efficiency = qt / qe
-    time_to_80 = time_steps[np.searchsorted(efficiency, 0.8)]
-    
-    st.success(f"""
-    - **Giai đoạn tăng trưởng nhanh:** Từ 0 đến {int(time_to_80)} phút, quá trình chiết đạt hiệu suất cao nhất.
-    - **Thời điểm tối ưu:** Hệ thống khuyến nghị dừng quá trình tại **{int(t_90 + 10)} phút**. 
-    - **Giải thích khoa học:** Việc tiếp tục chiết sau thời điểm này tiêu tốn năng lượng vận hành máy khuấy nhưng chỉ làm tăng <5% nồng độ hoạt chất.
-    """)
-
-    # 6. Bảng hiển thị dữ liệu (Đã định dạng sạch sẽ)
-    st.subheader("📋 Bảng dữ liệu mô phỏng chi tiết")
-    df_display = pd.DataFrame({
-        "Thời gian (phút)": time_steps, 
-        "Nồng độ (mg/g)": qt
-    })
-    # Hiển thị bảng với format số thập phân gọn gàng
-    st.dataframe(df_display.style.format({"Nồng độ (mg/g)": "{:.4f}"}), use_container_width=True)
-# --- MODULE 7: DỰ TOÁN QUY MÔ & KINH TẾ (TOÁN - NÂNG CẤP RÀNG BUỘC & PHÂN TÍCH CHI PHÍ) ---
-elif page == "7. Dự toán Quy mô & Kinh tế (Toán)":
-    with st.sidebar:
-        st.header("📖 Hướng dẫn Module 7")
-        st.info("""
-        **Mục tiêu:** Mô phỏng bài toán kinh tế và tối ưu hóa chi phí sản xuất hoạt chất Alkaloid dưới ràng buộc khắt khe về sản lượng thu hồi.
-        
-        **Điểm nổi bật:**
-        - Tích hợp dữ liệu từ Module 6 (Động học).
-        - Sử dụng thuật toán tối ưu hóa phi tuyến có ràng buộc (`SLSQP`).
-        """)
-        
-    st.title("7. Dự toán Quy mô & Kinh tế & Tối ưu hóa (Toán)")
-    st.markdown("Hệ thống tối ưu hóa chi phí sản xuất tự động dưới ràng buộc đảm bảo hàm lượng hoạt chất đầu ra.")
-
-    col_in1, col_in2 = st.columns(2)
-    with col_in1:
-        st.subheader("Thông số Đầu vào (Thị trường)")
-        price_leaf = st.number_input("Giá lá sen khô (VNĐ/kg)", value=50000, step=5000)
-        price_solvent = st.number_input("Giá dung môi tối ưu (VNĐ/Lít)", value=35000, step=2000)
-        price_elec = st.number_input("Giá điện (VNĐ/kWh)", value=2500, step=100)
-        target_yield_mg = st.number_input("Mức hoạt chất tối thiểu cần đạt (mg)", value=500.0, step=50.0)
-
-    with col_in2:
-        st.subheader("Thông số Giới hạn Vận hành")
-        
-        scale_leaf = st.slider("Khoảng quy mô mẻ chiết (kg lá)", 1, 50, (1, 50))
-        st.caption("📌 **Quy mô mẻ:** Giới hạn khối lượng nguyên liệu lá sen khô đầu vào cho một lần chiết xuất.")
-        
-        vol_solvent = st.slider("Khoảng thể tích dung môi (Lít)", 10, 200, (10, 200))
-        st.caption("📌 **Thể tích dung môi:** Khoảng giới hạn lượng dung môi cấp vào bình chiết.")
-        
-        recovery_eff = st.slider("Hiệu suất thu hồi trung bình (%)", 0.5, 2.0, 1.2, step=0.1)
-        st.caption("📌 **Hiệu suất thu hồi:** Tỷ lệ chuyển hóa hoạt chất kế thừa từ mô hình động học Module 6.")
+    with col_info:
+        st.markdown("##### 🎯 Sứ mệnh cốt lõi của CHẠM")
+        st.markdown("""
+        <div class="cham-card">
+            <b>1. Chuyển dịch góc nhìn:</b><br>
+            Không xem bệnh tật là kẻ thù để tiêu diệt hay kỳ thị người bệnh, mà hướng tới sự thấu hiểu, kiên nhẫn và sẻ chia gánh nặng.<br><br>
+            <b>2. Mô hình Phygital (Kết hợp Vật lý & Số):</b><br>
+            Board game 600x600mm để kết nối trực tiếp tại bàn chơi; Web Hub trực tuyến để mở rộng kiến thức, tra cứu tình huống và kết nối cộng đồng.<br><br>
+            <b>3. Khẩu hiệu hành động:</b><br>
+            <i>Thấu hiểu để kết nối – Kết nối để sẻ chia. Không ai phải đi một mình!</i>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
-    st.subheader("⚙️ Tối ưu hóa phi tuyến có ràng buộc (SciPy - SLSQP)")
-    
-    if st.button("🚀 Chạy thuật toán tối ưu hóa kinh tế & ràng buộc"):
-        # Hàm mục tiêu cần cực tiểu hóa (Chi phí)
-        def objective(x):
-            m, v = x
-            elec_kwh = v * 0.15 
-            return (m * price_leaf) + (v * price_solvent) + (elec_kwh * price_elec)
+    st.subheader("🏛️ Chi tiết 4 Trụ cột chiến lược trong hệ sinh thái CHẠM")
+    p1, p2, p3, p4 = st.columns(4)
+    with p1:
+        st.markdown("""
+        <div class="cham-card">
+            <span class="badge-nc">NGHIÊN CỨU</span>
+            <h4 style="margin-top:10px;">Khoa học & Dược liệu</h4>
+            <p style="font-size:0.9em;">Khám phá cơ chế sinh học phân tử, vai trò của enzyme AChE, BACE1 và tiềm năng ứng dụng các hoạt chất tự nhiên (như Alkaloid lá sen).</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with p2:
+        st.markdown("""
+        <div class="cham-card">
+            <span class="badge-cn">CÔNG NGHỆ</span>
+            <h4 style="margin-top:10px;">Giải pháp số vì con người</h4>
+            <p style="font-size:0.9em;">Ứng dụng AI hỗ trợ sàng lọc sớm, thiết bị định vị an toàn, ứng dụng nhắc nhở sinh hoạt và mô phỏng tin sinh học trực quan.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with p3:
+        st.markdown("""
+        <div class="cham-card">
+            <span class="badge-cs">CHĂM SÓC</span>
+            <h4 style="margin-top:10px;">Không gian thấu hiểu</h4>
+            <p style="font-size:0.9em;">Xây dựng mô hình chăm sóc toàn diện tại nhà, bảo vệ phẩm giá người bệnh và xoa dịu áp lực tâm lý cho người chăm sóc chính.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with p4:
+        st.markdown("""
+        <div class="cham-card">
+            <span class="badge-cd">CỘNG ĐỒNG</span>
+            <h4 style="margin-top:10px;">Lan tỏa & Mạng lưới</h4>
+            <p style="font-size:0.9em;">Tổ chức các chiến dịch giáo dục cộng đồng, xóa bỏ định kỳ xã hội và kết nối các nguồn lực xã hội để đồng hành bền vững.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Ràng buộc bất đẳng thức: Y(m, v) >= target_yield_mg
-        # tương đương với: (m * recovery_eff * 15) - target_yield_mg >= 0
-        constraints = {
-            'type': 'ineq', 
-            'fun': lambda x: (x[0] * recovery_eff * 15) - target_yield_mg
-        }
+# ==============================================================================
+# MODULE 2: KHOA HỌC THẦN KINH & BẢN CHẤT BỆNH LÝ
+# ==============================================================================
+elif menu == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
+    st.title("🔬 Khoa Học Thần Kinh Về Bệnh Alzheimer")
+    st.markdown("Hiểu rõ cơ chế sinh học bên trong não bộ giúp chúng ta có cái nhìn khoa học, khách quan và thấu cảm hơn với người bệnh.")
 
-        bounds = [scale_leaf, vol_solvent]
-        x0 = [(scale_leaf[0] + scale_leaf[1]) / 2, (vol_solvent[0] + vol_solvent[1]) / 2]
-        
-        # Sử dụng phương pháp SLSQP để giải quyết bài toán tối ưu có ràng buộc
-        res = minimize(objective, x0=x0, method='SLSQP', bounds=bounds, constraints=constraints)
-        
-        if res.success:
-            opt_m, opt_v = res.x
-            opt_cost = res.fun
-            est_output_mg = opt_m * recovery_eff * 15 
-            
-            # Tính toán chi tiết cấu thành chi phí để báo cáo chuyên sâu
-            cost_leaf_val = opt_m * price_leaf
-            cost_solvent_val = opt_v * price_solvent
-            cost_elec_val = (opt_v * 0.15) * price_elec
-            
-            st.success("🎉 Tối ưu hóa thành công dưới ràng buộc sản lượng!")
-            
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Khối lượng lá tối ưu", f"{opt_m:.2f} kg")
-            m2.metric("Thể tích dung môi tối ưu", f"{opt_v:.2f} Lít")
-            m3.metric("Tổng chi phí tối thiểu", f"{opt_cost:,.0f} VNĐ")
-            
-            # Hiển thị thêm bảng bóc tách chi phí chuyên nghiệp
-            with st.expander("📊 Xem chi tiết cấu thành chi phí kinh tế-kỹ thuật"):
-                col_c1, col_c2, col_c3 = st.columns(3)
-                col_c1.metric("Chi phí Nguyên liệu lá", f"{cost_leaf_val:,.0f} VNĐ", f"{(cost_leaf_val/opt_cost)*100:.1f}%")
-                col_c2.metric("Chi phí Dung môi", f"{cost_solvent_val:,.0f} VNĐ", f"{(cost_solvent_val/opt_cost)*100:.1f}%")
-                col_c3.metric("Chi phí Điện năng", f"{cost_elec_val:,.0f} VNĐ", f"{(cost_elec_val/opt_cost)*100:.1f}%")
-            
-            st.info(f"💡 **Khuyến nghị vận hành chuẩn hóa:** Để đảm bảo đạt sản lượng yêu cầu tối thiểu **{target_yield_mg:.1f} mg** (thực tế thu được **{est_output_mg:.1f} mg**) với chi phí thấp nhất, hệ thống tự động đề xuất cấu hình: **{opt_m:.1f} kg** lá sen khô và **{opt_v:.1f} lít** dung môi.")
+    tab_bio1, tab_bio2, tab_bio3 = st.tabs(["🧬 Mảng bám Amyloid & Đám rối Tau", "📉 Sự suy giảm chất dẫn truyền thần kinh", "🌿 Tiềm năng từ Hướng đi Dược liệu tự nhiên"])
+
+    with tab_bio1:
+        st.subheader("Cơ chế phân tử hình thành tổn thương não bộ")
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            st.markdown("""
+            <div class="cham-card">
+                <h4>1. Mảng bám Amyloid-beta (Aβ Plaques)</h4>
+                <p>Bình thường, protein tiền thân amyloid (APP) được cắt xẻ an toàn. Tuy nhiên, do sự hoạt động bất thường của các enzyme (đặc biệt là <b>BACE1</b>), các đoạn protein bị cắt ngắn tạo thành các mảng dính kết tụ lại bên ngoài tế bào thần kinh, gây cản trở truyền tín hiệu và kích hoạt phản ứng viêm.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_b2:
+            st.markdown("""
+            <div class="cham-card">
+                <h4>2. Đám rối sợi thần kinh Tau (Tau Tangles)</h4>
+                <p>Bên trong tế bào thần kinh, protein Tau đóng vai trò như các 'thanh ray' giúp vận chuyển chất dinh dưỡng. Ở người bệnh Alzheimer, protein Tau bị biến đổi hóa học (phosphoryl hóa quá mức), cuộn xoắn lại thành các đám rối, làm sập hệ thống giao thông nội bào và khiến tế bào chết đi.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with tab_bio2:
+        st.subheader("Sự thiếu hụt Acetylcholine và vai trò của Enzyme AChE")
+        st.write("Acetylcholine là chất dẫn truyền thần kinh cực kỳ quan trọng đối với trí nhớ, khả năng học tập và sự tỉnh táo.")
+        st.markdown("""
+        <div class="cham-card-warm">
+            <b>Cơ chế tác động của Enzyme Acetylcholinesterase (AChE):</b><br>
+            Ở người mắc Alzheimer, các tế bào sản xuất Acetylcholine bị suy giảm nghiêm trọng. Thêm vào đó, enzyme AChE liên tục phân hủy lượng chất dẫn truyền ít ỏi còn lại, làm gián đoạn hoàn toàn các mạch ghi nhớ.<br><br>
+            <b>Hướng tiếp cận y học hiện đại:</b><br>
+            Việc tìm kiếm các chất ức chế enzyme AChE và BACE1 giúp duy trì nồng độ Acetylcholine, làm chậm tốc độ tiến triển của triệu chứng suy giảm trí nhớ.
+        </div>
+        """, unsafe_allow_html=True)
+
+    with tab_bio3:
+        st.subheader("Triển vọng nghiên cứu dược liệu tự nhiên (Alkaloid lá sen)")
+        st.markdown("""
+        Trong các nghiên cứu khoa học gần đây, việc khai thác các hợp chất tự nhiên như nhóm **Alkaloid chiết xuất từ lá sen** (ví dụ: Nuciferine, Roemerine) cho thấy triển vọng tích cực trong việc thể hiện ái lực gắn kết với các đích enzyme gây bệnh ($AChE$ và $BACE1$). 
+        Điều này mở ra hướng đi mới trong việc tận dụng nguồn dược liệu y học cổ truyền kết hợp công nghệ tin sinh học hiện đại để phát triển các giải pháp hỗ trợ an toàn, chi phí hợp lý.
+        """)
+
+# ==============================================================================
+# MODULE 3: TRẢI NGHIỆM GÓC NHÌN & MÔ PHỎNG ĐỒNG CẢM
+# ==============================================================================
+elif menu == "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm":
+    st.title("👁️ Đặt Mình Vào Vị Trí Của Nhau")
+    st.markdown("Sự đồng cảm thực sự bắt đầu khi chúng ta tạm gác lại góc nhìn chủ quan để thử cảm nhận thế giới qua lăng kính của người bệnh và người chăm sóc.")
+
+    tab_patient, tab_caregiver = st.tabs(["🧠 Mô phỏng góc nhìn Người mắc Alzheimer", "❤️ Đánh giá áp lực Người chăm sóc (Caregiver Burnout)"])
+
+    with tab_patient:
+        st.subheader("Mô phỏng tương tác: 'Sự dịch chuyển nhận thức theo giai đoạn'")
+        stage = st.select_slider(
+            "Chọn mức độ tiến triển của triệu chứng:",
+            options=["Bình thường", "Giai đoạn Sớm (Quên nhẹ & lúng túng)", "Giai đoạn Trung bình (Hoang mang không gian)", "Giai đoạn Muộn (Mất định hướng toàn diện)"]
+        )
+
+        col_sim1, col_sim2 = st.columns([1.3, 1])
+        with col_sim1:
+            with st.container(border=True):
+                st.markdown("#### 🏠 Bối cảnh: Một buổi chiều tại gia đình")
+                if stage == "Bình thường":
+                    st.success("**Trạng thái nhận thức:** Bạn nhận ra con gái vừa đi làm về. Bạn nhớ hôm nay là thứ Ba và chuẩn bị bữa tối cùng gia đình.")
+                    st.write("💬 **Cảm xúc:** An tâm, chủ động, kết nối tốt với thực tại.")
+                elif stage == "Giai đoạn Sớm (Quên nhẹ & lúng túng)":
+                    st.info("**Trạng thái nhận thức:** Bạn thấy con gái về, muốn hỏi con một câu hỏi nhưng bỗng từ ngữ trôi tuột đi đâu mất. Bạn mất 15 giây để nhớ ra từ cần nói.")
+                    st.write("💬 **Cảm xúc:** Hơi lo âu, tự ti, cố gắng che giấu sự lúng túng vì sợ con cái lo lắng.")
+                elif stage == "Giai đoạn Trung bình (Hoang mang không gian)":
+                    st.warning("**Trạng thái nhận thức:** Ánh nắng chiều xiên ngang phòng (hiện tượng Sundowning). Căn phòng quen thuộc bỗng trở nên lạ lẫm như một trạm xe buýt xa lạ. Người phụ nữ đứng trước mặt gọi bạn là 'Mẹ', nhưng trong đầu bạn, bạn mới chỉ là cô thiếu nữ 20 tuổi.")
+                    st.write("💬 **Cảm xúc:** Bất an tột độ, hoảng hốt, muốn tìm đường 'về nhà thật sự'.")
+                else:
+                    st.error("**Trạng thái nhận thức:** Ngôn ngữ và khái niệm thời gian không còn ý nghĩa. Mọi thứ xung quanh là âm thanh hỗn độn. Điểm bấu víu duy nhất là sự ấm áp từ bàn tay hoặc giọng nói dịu dàng của người chăm sóc.")
+                    st.write("💬 **Cảm xúc:** Nhạy cảm cực độ với năng lượng và thái độ của người đối diện.")
+
+        with col_sim2:
+            st.markdown("""
+            <div class="cham-card-warm">
+                <h4>💡 Góc nhìn nhân văn từ CHẠM:</h4>
+                <p>Khi người bệnh nói những câu vô lý hoặc nhầm lẫn, họ <b>không hề cố tình gây khó dễ</b>. Đó là lúc não bộ của họ đang chịu tổn thương sâu sắc.</p>
+                <p>Điều họ cần không phải là một cuộc tranh cãi đúng - sai, mà là sự bao dung và một cái ôm trấn an.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with tab_caregiver:
+        st.subheader("Công cụ tự đánh giá: Khảo sát mức độ kiệt sức (Caregiver Stress Index)")
+        st.write("Hãy tích chọn những biểu hiện bạn hoặc người quen đang gặp phải khi chăm sóc người bệnh:")
+
+        c_q1 = st.checkbox("1. Thường xuyên bị gián đoạn giấc ngủ, thức dậy nhiều lần trong đêm để kiểm tra người thân.")
+        c_q2 = st.checkbox("2. Cảm thấy tội lỗi mỗi khi dành một chút thời gian nghỉ ngơi hoặc đi chơi riêng.")
+        c_q3 = st.checkbox("3. Dễ bị cáu gắt, sau đó lại tự dằn vặt vì đã lỡ lớn tiếng với người bệnh.")
+        c_q4.checkbox_val = st.checkbox("4. Phải hy sinh công việc cá nhân hoặc sở thích riêng để túc trực 24/7.") if 'c_q4' in locals() else st.checkbox("4. Phải thu hẹp các mối quan hệ xã hội vì không có thời gian trống.")
+
+        total_burnout = sum([c_q1, c_q2, c_q3, c_q4])
+        if total_burnout == 0:
+            st.info("Hãy tích chọn các biểu hiện thực tế để hệ thống đưa ra lời khuyên hỗ trợ.")
+        elif total_burnout <= 2:
+            st.warning(f"⚠️ **Cảnh báo mức độ nhẹ ({total_burnout}/4):** Bạn đang chịu áp lực đáng kể. Hãy chủ động phân chia công việc chăm sóc với các thành viên khác.")
         else:
-            st.warning("⚠️ Không tìm thấy nghiệm thỏa mãn (Miền khả thi rỗng). Có thể mức sản lượng yêu cầu quá cao so với giới hạn quy mô lá hoặc hiệu suất hiện tại. Vui lòng nới lỏng ràng buộc hoặc tăng quy mô mẻ chiết.")
+            st.error(f"🚨 **Báo động kiệt sức cao ({total_burnout}/4):** Bạn đang gánh vác quá nhiều một mình! Hãy nhớ thông điệp của CHẠM: *'Không ai phải đi một mình'*. Hãy tìm kiếm sự hỗ trợ từ các nhóm chuyên gia hoặc dịch vụ cộng đồng ngay.")
+
+# ==============================================================================
+# MODULE 4: CẨM NANG GIAO TIẾP & CHĂM SÓC NHÂN VĂN
+# ==============================================================================
+elif menu == "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn":
+    st.title("💬 Nghệ Thuật Giao Tiếp Bằng Trái Tiêm")
+    st.markdown("Những nguyên tắc ứng xử thực tế giúp giảm căng thẳng, xoa dịu hoảng loạn và bảo vệ phẩm giá cho người mắc Alzheimer.")
+
+    scenarios = {
+        "Tình huống 1: Người bệnh hỏi lặp lại một câu hỏi liên tục mỗi 5 phút": {
+            "avoid": "❌ 'Mẹ vừa hỏi câu này 5 lần rồi cơ mà! Sao mẹ cứ quên mãi thế?'",
+            "why": "Người bệnh thực sự quên mất mình đã hỏi. Câu trách cứ tạo cảm giác tủi thân và làm họ thêm bất an.",
+            "do": "✅ Nhẹ nhàng trả lời lại bằng nụ cười và tông giọng ấm áp như lần đầu, sau đó chuyển hướng chú ý sang một hoạt động khác (như uống nước, nghe nhạc)."
+        },
+        "Tình huống 2: Người bệnh khăng khăng đòi đi tìm người thân đã qua đời": {
+            "avoid": "❌ 'Bố đừng tìm nữa, mẹ mất từ chục năm trước rồi cơ mà!'",
+            "why": "Đánh thức sự thật mất mát một cách đột ngột gây ra cú sốc tâm lý đau đớn như thể sự việc vừa mới xảy ra.",
+            "do": "✅ Đồng cảm với cảm xúc của họ: 'Bố đang rất nhớ mẹ phải không ạ? Mẹ thương bố nhiều lắm. Bố kể cho con nghe kỷ niệm vui nhất của bố với mẹ đi.'"
+        },
+        "Tình huống 3: Người bệnh cáo buộc con cái lấy trộm đồ của họ": {
+            "avoid": "❌ 'Con không hề lấy! Lúc nào bố cũng đổ oan cho con hết!'",
+            "why": "Tranh cãi logic với người đang suy giảm trí nhớ chỉ làm tăng sự nghi kỵ và kích động mạnh hơn.",
+            "do": "✅ Công nhận cảm xúc lo lắng của họ và kiên nhẫn cùng đi tìm: 'Mất đồ chắc bố lo lắm nhỉ, để con cùng bố lục lại quanh phòng xem sao nhé!'"
+        },
+        "Tình huống 4: Người bệnh đi lạc, hoảng loạn khi ở nơi đông người": {
+            "avoid": "❌ Ôm giữ chặt từ phía sau hoặc quát lớn hỏi dồn dập thông tin cá nhân.",
+            "why": "Hành động bất ngờ từ phía sau kích hoạt phản xạ tự vệ và làm người bệnh hoảng loạn hơn.",
+            "do": "✅ Tiến lại từ phía trước trong tầm mắt, mỉm cười thân thiện, hạ thấp tông giọng và trấn an: 'Cháu chào bác, có cháu ở đây rồi, bác cứ thong thả bình tĩnh nhé.'"
+        }
+    }
+
+    sel_sc = st.selectbox("📌 Chọn tình huống thực tế cần tham khảo cách ứng xử:", list(scenarios.keys()))
+    sc_info = scenarios[sel_sc]
+
+    col_bad, col_good = st.columns(2)
+    with col_bad:
+        st.error("### 🚫 Phản ứng dễ gây tổn thương")
+        st.write(sc_info["avoid"])
+        st.caption(f"**Vì sao không nên?** {sc_info['why']}")
+    with col_good:
+        st.success("### 💚 Ứng xử thấu cảm chuẩn CHẠM")
+        st.write(sc_info["do"])
+        st.caption("**Hiệu quả:** Xoa dịu cảm xúc, bảo vệ lòng tự trọng và duy trì kết nối an toàn.")
+
+# ==============================================================================
+# MODULE 5: TRẠM TƯƠNG TÁC THẺ BÀI CHẠM (132 THẺ MỞ RỘNG)
+# ==============================================================================
+elif menu == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ mở rộng)":
+    st.title("🎲 Trạm Rút Thẻ Tình Huống CHẠM")
+    st.markdown("Trợ lý kỹ thuật số tích hợp song song cùng bàn cờ giấy **CHẠM**. Rút thẻ ngẫu nhiên để nhận câu hỏi thảo luận, thử thách hoặc kiến thức mở rộng.")
+
+    deck_library = {
+        "Thẻ Kiến thức (KT) — Lĩnh vực Khoa học & Sự thật": [
+            {"code": "KT-01", "title": "Bản chất sa sút trí tuệ", "content": "Sa sút trí tuệ không phải là tên một bệnh lý đơn lẻ, mà là hội chứng bao gồm nhiều bệnh lý suy giảm chức năng não bộ, trong đó Alzheimer chiếm đa số.", "action": "Thảo luận nhóm: Phân biệt rõ sự khác nhau giữangười hay quên tuổi già và bệnh nhân Alzheimer."},
+            {"code": "KT-08", "title": "Vai trò của Giấc ngủ đối với não bộ", "content": "Giấc ngủ sâu là thời điểm hệ thống thanh thải glymphatic trong não hoạt động mạnh mẽ nhất để dọn dẹp các mảng protein độc hại tích tụ trong ngày.", "action": "Đề xuất 2 thói quen giúp cải thiện chất lượng giấc ngủ cho người cao tuổi."},
+            {"code": "KT-14", "title": "Dinh dưỡng và Sức khỏe não bộ", "content": "Chế độ ăn Địa Trung Hải giàu rau xanh, cá béo, quả mọng và dầu ô liu hỗ trợ bảo vệ tế bào thần kinh và làm chậm quá trình suy giảm nhận thức.", "action": "Kể tên 3 loại thực phẩm tốt cho trí nhớ mà bạn biết."}
+        ],
+        "Thẻ Góc nhìn (GN) — Thấu cảm & Phẩm giá": [
+            {"code": "GN-03", "title": "Sự tự ti thầm lặng", "content": "Nhiều người bệnh ở giai đoạn đầu nhận thức được sự sa sút của mình nhưng cố giấu giếm vì sợ trở thành gánh nặng cho con cháu.", "action": "Làm thế nào để con cái nhận biết được sự bất an giấu kín này?"},
+            {"code": "GN-11", "title": "Không gian sinh hoạt quen thuộc", "content": "Việc chuyển người bệnh đến một môi trường hoàn toàn mới (như nhà mới xây hoặc viện dưỡng lão) có thể gây ra cú sốc tâm lý mạnh làm bệnh nặng hơn.", "action": "Thảo luận cách giữ lại những dấu ấn quen thuộc trong không gian sống."}
+        ],
+        "Thẻ Thử thách (TC) — Xử lý tình huống thực tế": [
+            {"code": "TC-04", "title": "Từ chối tắm rửa và vệ sinh", "content": "Người bệnh kiên quyết từ chối đi tắm vì cảm thấy lạnh, sợ nước hoặc không hiểu lý do vì sao cần phải tắm.", "action": "Đưa ra giải pháp nhẹ nhàng để thuyết phục người bệnh mà không dùng vũ lực hay ép buộc."},
+            {"code": "TC-07", "title": "Đi lang thang và mất định hướng", "content": "Người bệnh tự ý mở cửa ra ngoài vào buổi trưa và đi lạc đến một khu chợ cách nhà 2km không nhớ đường về.", "action": "Xây dựng quy trình phối hợp khẩn cấp giữa gia đình và mạng lưới cộng đồng."}
+        ],
+        "Thẻ Hợp tác (HT) — Sức mạnh cộng đồng": [
+            {"code": "HT-02", "title": "Mạng lưới 'Hàng xóm Tươi cười'", "content": "Xây dựng liên kết giữa các hộ gia đình trong khu dân cư để cùng hỗ trợ quan sát, giúp đỡ người cao tuổi đi lại an toàn trong khu vực.", "action": "Mỗi thành viên trong đội đóng góp một sáng kiến gắn kết tình làng nghĩa xóm."}
+        ]
+    }
+
+    c_sel, c_res = st.columns([1, 1.5])
+    with c_sel:
+        chosen_cat = st.selectbox("Chọn bộ thẻ cần rút:", list(deck_library.keys()))
+        if st.button("✨ RÚT LÁ THẺ NGẪU NHIÊN", type="primary", use_container_width=True):
+            st.session_state['active_card'] = random.choice(deck_library[chosen_cat])
+            st.session_state['active_cat'] = chosen_cat
+
+    with c_res:
+        if 'active_card' in st.session_state:
+            ac = st.session_state['active_card']
+            st.markdown(f"""
+            <div class="cham-card" style="border-left: 8px solid #18324A;">
+                <span class="badge-nc">{st.session_state['active_cat']}</span>
+                <h3 style="margin-top:12px;">[{ac['code']}] {ac['title']}</h3>
+                <p style="font-size:1.08em; line-height:1.6;">{ac['content']}</p>
+                <hr>
+                <p style="color:#2D6A4F; font-weight:bold;">🎯 Gợi ý thảo luận / Hành động thực tế:</p>
+                <p>{ac['action']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("👈 Nhấn nút **RÚT LÁ THẺ NGẪU NHIÊN** bên trái để mở thẻ bài tương tác!")
+
+# ==============================================================================
+# MODULE 6: THỬ THÁCH PHÁ BỎ ĐỊNH KIẾN (QUIZ)
+# ==============================================================================
+elif menu == "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)":
+    st.title("🧠 Kiểm Tra Kiến Thức & Phá Bỏ Định Kiến")
+    st.markdown("Trắc nghiệm nhanh 5 câu hỏi giúp bạn củng cố nhận thức chuẩn xác về bệnh Alzheimer.")
+
+    with st.form("quiz_comprehensive"):
+        q1 = st.radio("1. Bệnh Alzheimer có phải là một phần tất yếu của quá trình lão hóa tự nhiên không?", ["Đúng, tuổi cao ai cũng mắc", "Sai, đây là bệnh lý thoái hóa thần kinh mạn tính"])
+        q2 = st.radio("2. Trí tuệ nhân tạo (AI) trong y tế nên được ứng dụng thế nào đối với Alzheimer?", ["Thay thế hoàn toàn bác sĩ chuyên khoa", "Hỗ trợ sàng lọc sớm, quản lý dữ liệu và trợ giúp người chăm sóc"])
+        q3 = st.radio("3. Khi người bệnh nhớ nhầm hoặc hoang tưởng nhẹ, chúng ta nên ứng xử ra sao?", ["Tranh cãi đến cùng để bắt họ công nhận sự thật", "Tôn trọng cảm xúc, thấu hiểu và khéo léo chuyển hướng"])
+        q4 = st.radio("4. Người mắc Alzheimer ở giai đoạn tiến triển có còn cảm nhận được sự yêu thương không?", ["Còn, trí nhớ cảm xúc rất nhạy bén", "Không còn cảm nhận được gì nữa"])
+        q5 = st.radio("5. Thông điệp cốt lõi của dự án CHẠM là gì?", ["Đóng cửa cách ly người bệnh để đảm bảo an toàn", "Thấu hiểu để kết nối – Không ai phải đi một mình"])
+
+        submit_q = st.form_submit_button("Nộp bài & Nhận huy hiệu Đại sứ Thấu cảm")
+
+    if submit_q:
+        points = 0
+        if "Sai" in q1: points += 1
+        if "Hỗ trợ" in q2: points += 1
+        if "Tôn trọng" in q3: points += 1
+        if "Còn" in q4: points += 1
+        if "Thấu hiểu" in q5: points += 1
+
+        st.divider()
+        if points == 5:
+            st.balloons()
+            st.success(f"🏆 **XUẤT SẮC ({points}/5 điểm)!** Bạn chính thức đạt danh hiệu **Đại sứ Thấu cảm CHẠM** với nhận thức vô cùng sâu sắc và nhân văn.")
+        elif points >= 3:
+            st.info(f"🌟 **RẤT TỐT ({points}/5 điểm)!** Bạn đã nắm vững các nguyên tắc cốt lõi để đồng hành cùng người bệnh.")
+        else:
+            st.warning(f"🌱 **HOÀN THÀNH TỐT ({points}/5 điểm)!** Hãy khám phá thêm các chuyên mục cẩm nang để hiểu thêm nhiều kiến thức bổ ích nhé.")
+
+# ==============================================================================
+# MODULE 7: NHẬT KÝ NGƯỜI CHĂM SÓC & SỨC KHỎE TINH THẦN
+# ==============================================================================
+elif menu == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần":
+    st.title("📝 Góc Nhật Ký & Trạm Chữa Lành Tâm Hồn")
+    st.markdown("Nơi ghi lại những tâm tư, áp lực hoặc những khoảnh khắc ấm áp của những người làm công tác chăm sóc gia đình.")
+
+    col_j1, col_j2 = st.columns([1, 1.3])
+    with col_j1:
+        with st.container(border=True):
+            st.subheader("✍️ Viết nhật ký hôm nay")
+            j_title = st.text_input("Tiêu đề / Cảm xúc chủ đạo:", placeholder="Ví dụ: Một ngày bình yên hơn hôm qua...")
+            j_content = st.text_area("Chia sẻ suy nghĩ của bạn:", height=120, placeholder="Hôm nay bạn đã trải qua những áp lực hay khoảnh khắc đáng nhớ nào...")
+            if st.button("Lưu vào Sổ tay Chữa lành", type="primary", use_container_width=True):
+                if j_title and j_content:
+                    st.session_state['caregiver_journal'].insert(0, {"title": j_title, "content": j_content, "time": time.strftime("%d/%m/%Y %H:%M")})
+                    st.success("Đã lưu tâm sự của bạn vào sổ tay cá nhân.")
+                    st.rerun()
+                else:
+                    st.warning("Vui lòng điền đầy đủ tiêu đề và nội dung.")
+
+    with col_j2:
+        st.subheader("📖 Những trang nhật ký đã lưu")
+        if not st.session_state['caregiver_journal']:
+            st.info("Chưa có trang nhật ký nào được ghi lại. Hãy chia sẻ cảm xúc của bạn ở khung bên trái.")
+        else:
+            for item in st.session_state['caregiver_journal']:
+                st.markdown(f"""
+                <div class="cham-card-warm">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>📌 {item['title']}</b>
+                        <span style="font-size:0.85em; color:#666;">{item['time']}</span>
+                    </div>
+                    <p style="margin-top:8px; font-style:italic;">“{item['content']}”</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+# ==============================================================================
+# MODULE 8: TÀI NGUYÊN NGHIÊN CỨU & THƯ VIỆN TÀI LIỆU
+# ==============================================================================
+elif menu == "📚 8. Tài nguyên Nghiên cứu & Thư viện Tài liệu":
+    st.title("📚 Thư Viện Tài Nguyên & Nghiên Cứu CHẠM")
+    st.markdown("Tổng hợp các tài liệu hướng dẫn, báo cáo khoa học và tài nguyên truyền thông phục vụ cộng đồng.")
+
+    col_r1, col_r2 = st.columns(2)
+    with col_r1:
+        with st.container(border=True):
+            st.subheader("📑 Tài liệu Hướng dẫn Chăm sóc")
+            st.write("• **Cẩm nang gia đình đồng hành cùng Alzheimer** (PDF - 42 trang)")
+            st.write("• **Bộ quy tắc giao tiếp ứng xử trong nhà** (Infographic chuẩn hóa)")
+            st.write("• **Thiết kế không gian an toàn chống ngã cho người cao tuổi**")
+            st.button("📥 Tải bộ cẩm nang gia đình", key="dl_1")
+
+    with col_r2:
+        with st.container(border=True):
+            st.subheader("🔬 Tài liệu Khoa học & Dự án")
+            st.write("• **Báo cáo kỹ thuật chi tiết Board Game CHẠM (64 ô)**")
+            st.write("• **Tài liệu nghiên cứu định hướng dược liệu tự nhiên & Tin sinh học**")
+            st.write("• **Slide Pitch Deck thuyết trình dự án khởi nghiệp xã hội**")
+            st.button("📥 Tải tài liệu kỹ thuật dự án", key="dl_2")
+
+# ==============================================================================
+# MODULE 9: BỨC TƯỜNG SẺ CHIA & KẾT NỐI CỘNG ĐỒNG
+# ==============================================================================
+elif menu == "💌 9. Bức tường Sẻ chia & Kết nối Cộng đồng":
+    st.title("💌 Bức Tường Sẻ Chia — Không Ai Phải Đi Một Mình")
+    st.markdown("Nơi gắn kết những trái tim yêu thương, gửi gắm những lời nhắn động viên ý nghĩa đến cộng đồng.")
+
+    col_form, col_wall = st.columns([1, 1.4])
+
+    with col_form:
+        with st.container(border=True):
+            st.subheader("✍️ Gửi thông điệp yêu thương")
+            user_name = st.text_input("Tên của bạn (hoặc bút danh):", placeholder="Ví dụ: Gia An - THPT Chuyên Hùng Vương")
+            user_role = st.selectbox("Vai trò của bạn:", [
+                "Học sinh / Sinh viên tìm hiểu dự án",
+                "Người chơi Board Game CHẠM",
+                "Người thân / Người chăm sóc gia đình",
+                "Tình nguyện viên / Cộng đồng"
+            ])
+            user_msg = st.text_area("Lời nhắn gửi của bạn:", height=130, placeholder="Chia sẻ suy nghĩ hoặc lời động viên chân thành...")
+            
+            if st.button("🕊️ Đăng lên Bức tường Sẻ chia", type="primary", use_container_width=True):
+                if user_msg.strip():
+                    st.session_state['community_notes'].insert(0, {
+                        "author": user_name if user_name.strip() else "Người bạn ẩn danh",
+                        "role": user_role,
+                        "msg": user_msg.strip()
+                    })
+                    st.success("Cảm ơn bạn! Thông điệp của bạn đã được lan tỏa.")
+                    st.rerun()
+                else:
+                    st.warning("Vui lòng viết nội dung trước khi gửi.")
+
+    with col_wall:
+        st.subheader(f"🌿 Những lời nhắn từ cộng đồng ({len(st.session_state['community_notes'])})")
+        for note in st.session_state['community_notes']:
+            st.markdown(f"""
+            <div class="cham-card-warm">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:#18324A; font-size:1.05em;">👤 {note['author']}</b>
+                    <span class="badge-cd">{note['role']}</span>
+                </div>
+                <p style="margin-top:10px; color:#333; font-style:italic;">“{note['msg']}”</p>
+            </div>
+            """, unsafe_allow_html=True)
