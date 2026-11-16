@@ -13,10 +13,10 @@ st.set_page_config(
     page_title="CHẠM Hub | Thấu hiểu để kết nối – Không ai phải đi một mình",
     page_icon="🪷",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" # Ẩn sidebar mặc định để tập trung toàn bộ không gian cho menu ngang
 )
 
-# Custom CSS phong cách chuẩn CHẠM (Navy, Xanh lá chăm sóc, Cam ấm, Tông nền nhẹ nhàng)
+# Custom CSS tinh chỉnh giao diện menu ngang, thẻ card và màu sắc chuẩn CHẠM
 st.markdown("""
 <style>
     .main {
@@ -56,6 +56,17 @@ st.markdown("""
     .badge-cs { background-color: #E0F0E8; color: #2D6A4F; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
     .badge-cd { background-color: #FCE8D5; color: #9C5221; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
     .badge-cn { background-color: #E8E2F4; color: #5B4E8C; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
+    
+    /* Tinh chỉnh thanh chọn radio thành dạng tab ngang hiện đại */
+    div.row-widget.stRadio > div {
+        flex-direction: row;
+        justify-content: center;
+        background-color: #FFFFFF;
+        padding: 10px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        gap: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,22 +96,9 @@ if 'visited' not in st.session_state:
                 text-align: center;
                 padding: 20px;
             }
-            .splash-icon {
-                font-size: 110px;
-                animation: floatUp 2.5s ease-out forwards;
-            }
-            .splash-title {
-                font-size: 46px;
-                font-weight: 800;
-                letter-spacing: 6px;
-                margin-top: 15px;
-            }
-            .splash-sub {
-                font-size: 21px;
-                color: #F2C66D;
-                margin-top: 10px;
-                font-weight: 500;
-            }
+            .splash-icon { font-size: 110px; animation: floatUp 2.5s ease-out forwards; }
+            .splash-title { font-size: 46px; font-weight: 800; letter-spacing: 6px; margin-top: 15px; }
+            .splash-sub { font-size: 21px; color: #F2C66D; margin-top: 10px; font-weight: 500; }
             </style>
             <div class="splash-screen">
                 <div class="splash-icon">🪷 🤝</div>
@@ -113,7 +111,7 @@ if 'visited' not in st.session_state:
     intro_placeholder.empty()
     st.session_state['visited'] = True
 
-# Khởi tạo dữ liệu lưu trữ mở rộng trong session_state
+# Khởi tạo kho lưu trữ dữ liệu trong session_state
 if 'community_notes' not in st.session_state:
     st.session_state['community_notes'] = [
         {"author": "Minh Thư (Học sinh lớp 11)", "role": "Người chơi trải nghiệm CHẠM", "msg": "Trước đây mình hay gắt gỏng mỗi khi bà hỏi đi hỏi lại một câu. Sau khi chơi bàn cờ CHẠM và đọc phần trải nghiệm góc nhìn, mình mới hiểu bà không cố tình làm phiền mà vì ký ức của bà đang rơi rụng từng ngày."},
@@ -125,49 +123,46 @@ if 'caregiver_journal' not in st.session_state:
     st.session_state['caregiver_journal'] = []
 
 # ==============================================================================
-# 3. THANH ĐIỀU HƯỚNG BÊN TRÁI (SIDEBAR)
+# 3. HEADER & THANH MENU NGANG TRỰC TIẾP TRÊN MAIN MENU
 # ==============================================================================
-with st.sidebar:
-    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+col_logo, col_title = st.columns([0.15, 0.85])
+with col_logo:
     if os.path.exists("AlkaLotus/logo.png"):
-        st.image("AlkaLotus/logo.png", width=180)
+        st.image("AlkaLotus/logo.png", width=100)
     elif os.path.exists("logo.png"):
-        st.image("logo.png", width=180)
+        st.image("logo.png", width=100)
     else:
-        st.markdown("<h1 style='text-align:center; color:#18324A; margin-bottom:0;'>🪷 CHẠM</h1>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    st.markdown("<p style='text-align:center; color:#55A88B; font-weight:bold; font-size:0.9em;'>THẤU HIỂU ĐỂ KẾT NỐI</p>", unsafe_allow_html=True)
-    st.divider()
+        st.markdown("<h1>🪷</h1>", unsafe_allow_html=True)
 
-    menu = st.radio(
-        "🧭 KHÁM PHÁ KHÔNG GIAN CHẠM:",
-        [
-            "🏠 1. Trang chủ & Tổng quan Dự án",
-            "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý",
-            "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm",
-            "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn",
-            "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ mở rộng)",
-            "🧠 6. Thử thách Phá bỏ Định kiến (Interactive Quiz)",
-            "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần",
-            "📚 8. Tài nguyên Nghiên cứu & Thư viện Tài liệu",
-            "💌 9. Bức tường Sẻ chia & Kết nối Cộng đồng"
-        ]
-    )
+with col_title:
+    st.markdown("<h1 style='margin-bottom:0; color:#18324A;'>CHẠM Hub — Không Gian Tri Thức & Kết Nối</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#55A88B; font-weight:600; margin-top:0;'>Thấu hiểu để kết nối – Kết nối để sẻ chia • Nền tảng số bổ trợ Board Game CHẠM</p>", unsafe_allow_html=True)
 
-    st.divider()
-    st.markdown("""
-    <div style='background-color:#E0F0E8; padding:12px; border-radius:10px; font-size:0.85em; color:#18324A;'>
-        <b>📌 Bạn đang chơi Board Game CHẠM?</b><br>
-        Sử dụng Mục <b>5 (Trạm Tương tác)</b> để rút thẻ ngẫu nhiên và mở rộng tình huống ngay trong ván chơi!
-    </div>
-    """, unsafe_allow_html=True)
-    st.caption("Dự án Giáo dục & Cộng đồng CHẠM • Phiên bản Mở rộng 2026")
+st.divider()
+
+# Thanh menu ngang chính hiển thị ngay trên màn hình (Main Menu Navigation)
+selected_tab = st.selectbox(
+    "📌 LỰA CHỌN KHÔNG GIAN TRẢI NGHIỆM:",
+    [
+        "🏠 1. Trang chủ & Tổng quan Dự án",
+        "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý",
+        "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm",
+        "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn",
+        "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ)",
+        "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)",
+        "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần",
+        "📚 8. Tài nguyên Nghiên cứu & Thư viện",
+        "💌 9. Bức tường Sẻ chia Cộng đồng"
+    ],
+    label_visibility="collapsed"
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ==============================================================================
 # MODULE 1: TRANG CHỦ & TỔNG QUAN DỰ ÁN
 # ==============================================================================
-if menu == "🏠 1. Trang chủ & Tổng quan Dự án":
+if selected_tab == "🏠 1. Trang chủ & Tổng quan Dự án":
     st.title("🪷 CHẠM — Hành Trình Đánh Thức Sự Thấu Cảm")
     st.markdown("#### *“Alzheimer có thể lấy đi những ký ức trong tâm trí, nhưng không bao giờ có thể lấy đi nhu cầu được yêu thương và tôn trọng của một con người.”*")
     
@@ -255,7 +250,7 @@ if menu == "🏠 1. Trang chủ & Tổng quan Dự án":
 # ==============================================================================
 # MODULE 2: KHOA HỌC THẦN KINH & BẢN CHẤT BỆNH LÝ
 # ==============================================================================
-elif menu == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
+elif selected_tab == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
     st.title("🔬 Khoa Học Thần Kinh Về Bệnh Alzheimer")
     st.markdown("Hiểu rõ cơ chế sinh học bên trong não bộ giúp chúng ta có cái nhìn khoa học, khách quan và thấu cảm hơn với người bệnh.")
 
@@ -301,7 +296,7 @@ elif menu == "🔬 2. Khoa học Thần kinh & Bản chất Bệnh lý":
 # ==============================================================================
 # MODULE 3: TRẢI NGHIỆM GÓC NHÌN & MÔ PHỎNG ĐỒNG CẢM
 # ==============================================================================
-elif menu == "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm":
+elif selected_tab == "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm":
     st.title("👁️ Đặt Mình Vào Vị Trí Của Nhau")
     st.markdown("Sự đồng cảm thực sự bắt đầu khi chúng ta tạm gác lại góc nhìn chủ quan để thử cảm nhận thế giới qua lăng kính của người bệnh và người chăm sóc.")
 
@@ -347,7 +342,7 @@ elif menu == "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm"
         c_q1 = st.checkbox("1. Thường xuyên bị gián đoạn giấc ngủ, thức dậy nhiều lần trong đêm để kiểm tra người thân.")
         c_q2 = st.checkbox("2. Cảm thấy tội lỗi mỗi khi dành một chút thời gian nghỉ ngơi hoặc đi chơi riêng.")
         c_q3 = st.checkbox("3. Dễ bị cáu gắt, sau đó lại tự dằn vặt vì đã lỡ lớn tiếng với người bệnh.")
-        c_q4.checkbox_val = st.checkbox("4. Phải hy sinh công việc cá nhân hoặc sở thích riêng để túc trực 24/7.") if 'c_q4' in locals() else st.checkbox("4. Phải thu hẹp các mối quan hệ xã hội vì không có thời gian trống.")
+        c_q4 = st.checkbox("4. Phải thu hẹp các mối quan hệ xã hội vì không có thời gian trống.")
 
         total_burnout = sum([c_q1, c_q2, c_q3, c_q4])
         if total_burnout == 0:
@@ -360,8 +355,8 @@ elif menu == "👁️ 3. Trải nghiệm Góc nhìn & Mô phỏng Đồng cảm"
 # ==============================================================================
 # MODULE 4: CẨM NANG GIAO TIẾP & CHĂM SÓC NHÂN VĂN
 # ==============================================================================
-elif menu == "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn":
-    st.title("💬 Nghệ Thuật Giao Tiếp Bằng Trái Tiêm")
+elif selected_tab == "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn":
+    st.title("💬 Nghệ Thuật Giao Tiếp Bằng Trái Tim")
     st.markdown("Những nguyên tắc ứng xử thực tế giúp giảm căng thẳng, xoa dịu hoảng loạn và bảo vệ phẩm giá cho người mắc Alzheimer.")
 
     scenarios = {
@@ -403,13 +398,13 @@ elif menu == "💬 4. Cẩm nang Giao tiếp & Chăm sóc Nhân văn":
 # ==============================================================================
 # MODULE 5: TRẠM TƯƠNG TÁC THẺ BÀI CHẠM (132 THẺ MỞ RỘNG)
 # ==============================================================================
-elif menu == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ mở rộng)":
+elif selected_tab == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ)":
     st.title("🎲 Trạm Rút Thẻ Tình Huống CHẠM")
     st.markdown("Trợ lý kỹ thuật số tích hợp song song cùng bàn cờ giấy **CHẠM**. Rút thẻ ngẫu nhiên để nhận câu hỏi thảo luận, thử thách hoặc kiến thức mở rộng.")
 
     deck_library = {
         "Thẻ Kiến thức (KT) — Lĩnh vực Khoa học & Sự thật": [
-            {"code": "KT-01", "title": "Bản chất sa sút trí tuệ", "content": "Sa sút trí tuệ không phải là tên một bệnh lý đơn lẻ, mà là hội chứng bao gồm nhiều bệnh lý suy giảm chức năng não bộ, trong đó Alzheimer chiếm đa số.", "action": "Thảo luận nhóm: Phân biệt rõ sự khác nhau giữangười hay quên tuổi già và bệnh nhân Alzheimer."},
+            {"code": "KT-01", "title": "Bản chất sa sút trí tuệ", "content": "Sa sút trí tuệ không phải là tên một bệnh lý đơn lẻ, mà là hội chứng bao gồm nhiều bệnh lý suy giảm chức năng não bộ, trong đó Alzheimer chiếm đa số.", "action": "Thảo luận nhóm: Phân biệt rõ sự khác nhau giữa người hay quên tuổi già và bệnh nhân Alzheimer."},
             {"code": "KT-08", "title": "Vai trò của Giấc ngủ đối với não bộ", "content": "Giấc ngủ sâu là thời điểm hệ thống thanh thải glymphatic trong não hoạt động mạnh mẽ nhất để dọn dẹp các mảng protein độc hại tích tụ trong ngày.", "action": "Đề xuất 2 thói quen giúp cải thiện chất lượng giấc ngủ cho người cao tuổi."},
             {"code": "KT-14", "title": "Dinh dưỡng và Sức khỏe não bộ", "content": "Chế độ ăn Địa Trung Hải giàu rau xanh, cá béo, quả mọng và dầu ô liu hỗ trợ bảo vệ tế bào thần kinh và làm chậm quá trình suy giảm nhận thức.", "action": "Kể tên 3 loại thực phẩm tốt cho trí nhớ mà bạn biết."}
         ],
@@ -452,7 +447,7 @@ elif menu == "🎲 5. Trạm Tương tác Thẻ bài CHẠM (132 Thẻ mở rộ
 # ==============================================================================
 # MODULE 6: THỬ THÁCH PHÁ BỎ ĐỊNH KIẾN (QUIZ)
 # ==============================================================================
-elif menu == "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)":
+elif selected_tab == "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)":
     st.title("🧠 Kiểm Tra Kiến Thức & Phá Bỏ Định Kiến")
     st.markdown("Trắc nghiệm nhanh 5 câu hỏi giúp bạn củng cố nhận thức chuẩn xác về bệnh Alzheimer.")
 
@@ -485,7 +480,7 @@ elif menu == "🧠 6. Thử thách Phá bỏ Định kiến (Quiz)":
 # ==============================================================================
 # MODULE 7: NHẬT KÝ NGƯỜI CHĂM SÓC & SỨC KHỎE TINH THẦN
 # ==============================================================================
-elif menu == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần":
+elif selected_tab == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần":
     st.title("📝 Góc Nhật Ký & Trạm Chữa Lành Tâm Hồn")
     st.markdown("Nơi ghi lại những tâm tư, áp lực hoặc những khoảnh khắc ấm áp của những người làm công tác chăm sóc gia đình.")
 
@@ -520,9 +515,9 @@ elif menu == "📝 7. Nhật ký Người chăm sóc & Sức khỏe Tinh thần"
                 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# MODULE 8: TÀI NGUYÊN NGHIÊN CỨU & THƯ VIỆN TÀI LIỆU
+# MODULE 8: TÀI NGUYÊN NGHIÊN CỨU & THƯ VIỆN
 # ==============================================================================
-elif menu == "📚 8. Tài nguyên Nghiên cứu & Thư viện Tài liệu":
+elif selected_tab == "📚 8. Tài nguyên Nghiên cứu & Thư viện":
     st.title("📚 Thư Viện Tài Nguyên & Nghiên Cứu CHẠM")
     st.markdown("Tổng hợp các tài liệu hướng dẫn, báo cáo khoa học và tài nguyên truyền thông phục vụ cộng đồng.")
 
@@ -544,9 +539,9 @@ elif menu == "📚 8. Tài nguyên Nghiên cứu & Thư viện Tài liệu":
             st.button("📥 Tải tài liệu kỹ thuật dự án", key="dl_2")
 
 # ==============================================================================
-# MODULE 9: BỨC TƯỜNG SẺ CHIA & KẾT NỐI CỘNG ĐỒNG
+# MODULE 9: BỨC TƯỜNG SẺ CHIA CỘNG ĐỒNG
 # ==============================================================================
-elif menu == "💌 9. Bức tường Sẻ chia & Kết nối Cộng đồng":
+elif selected_tab == "💌 9. Bức tường Sẻ chia Cộng đồng":
     st.title("💌 Bức Tường Sẻ Chia — Không Ai Phải Đi Một Mình")
     st.markdown("Nơi gắn kết những trái tim yêu thương, gửi gắm những lời nhắn động viên ý nghĩa đến cộng đồng.")
 
