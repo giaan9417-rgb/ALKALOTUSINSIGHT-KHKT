@@ -638,38 +638,83 @@ elif selected_page == "🧠 Cẩm nang đồng hành":
         st.markdown(f"- [{title}]({url})")
 
 
+
 # ============================================================
 # MODULE 3 – TRẢI NGHIỆM TƯƠNG TÁC
 # ============================================================
 
 elif selected_page == "🎲 Trải nghiệm tương tác":
 
-    st.markdown('<div class="section-label">03 / HỌC BẰNG TRẢI NGHIỆM</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-label">03 / HỌC BẰNG TRẢI NGHIỆM</div>',
+        unsafe_allow_html=True
+    )
     st.title("Trạm trải nghiệm CHẠM")
-    st.write("Khám phá thẻ tình huống và thử sức với các lựa chọn ứng xử.")
+    st.write(
+        "Khám phá thẻ tình huống, thực hành lựa chọn ứng xử "
+        "và theo dõi hành trình thấu cảm."
+    )
 
-    tab1, tab2, tab3 = st.tabs([
-        "🎴 Trạm rút thẻ",
-        "🎮 Mini-game",
-        "🏅 Hành trình thấu cảm"
-    ])
+    # Khởi tạo dữ liệu mini-game
+    if "game_feedback" not in st.session_state:
+        st.session_state.game_feedback = {}
 
-    with tab1:
+    if "game_round" not in st.session_state:
+        st.session_state.game_round = 0
 
-        st.subheader("Trạm rút thẻ tình huống")
+    if "answered" not in st.session_state:
+        st.session_state.answered = {}
+
+    if "score" not in st.session_state:
+        st.session_state.score = 0
+
+    if "badge_unlocked" not in st.session_state:
+        st.session_state.badge_unlocked = False
+
+    # Điều hướng bằng radio thay cho tabs
+    experience_area = st.radio(
+        "CHỌN KHU VỰC TRẢI NGHIỆM",
+        [
+            "🎴 Trạm rút thẻ",
+            "🎮 Mini-game",
+            "🏅 Hành trình thấu cảm"
+        ],
+        horizontal=True,
+        key="experience_area",
+        label_visibility="collapsed"
+    )
+
+    st.divider()
+
+    # ========================================================
+    # 1. TRẠM RÚT THẺ
+    # ========================================================
+
+    if experience_area == "🎴 Trạm rút thẻ":
+
+        st.subheader("🎴 Trạm rút thẻ tình huống")
 
         st.write(
             "Chọn một nhóm thẻ để khám phá nội dung. "
-            "Các thẻ đang hiển thị là dữ liệu minh họa, không phải toàn bộ bộ 132 thẻ chính thức."
+            "Các thẻ đang hiển thị là dữ liệu minh họa, "
+            "không phải toàn bộ bộ 132 thẻ chính thức."
         )
 
         category = st.selectbox(
             "Chọn nhóm thẻ:",
-            list(deck_library.keys())
+            list(deck_library.keys()),
+            key="draw_category"
         )
 
-        if st.button("✨ RÚT MỘT LÁ THẺ", type="primary", use_container_width=True):
-            st.session_state.active_card = random.choice(deck_library[category])
+        if st.button(
+            "✨ RÚT MỘT LÁ THẺ",
+            type="primary",
+            use_container_width=True,
+            key="draw_card"
+        ):
+            st.session_state.active_card = random.choice(
+                deck_library[category]
+            )
             st.session_state.active_category = category
 
         if st.session_state.active_card:
@@ -678,142 +723,289 @@ elif selected_page == "🎲 Trải nghiệm tương tác":
 
             st.markdown(f"""
             <div class="card-display">
-                <div class="card-code">{st.session_state.active_category.upper()}</div>
-                <h2 style="margin-top:18px;">{card['title']}</h2>
-                <div style="color:#F2C66D;font-weight:700;">{card['code']}</div>
-                <p style="font-size:17px;line-height:1.8;margin-top:20px;">{card['content']}</p>
+                <div class="card-code">
+                    {st.session_state.get('active_category', 'CHẠM').upper()}
+                </div>
+
+                <h2 style="margin-top:18px;">
+                    {card['title']}
+                </h2>
+
+                <div style="color:#F2C66D;font-weight:700;">
+                    {card['code']}
+                </div>
+
+                <p style="font-size:17px;line-height:1.8;margin-top:20px;">
+                    {card['content']}
+                </p>
+
                 <hr style="border-color:rgba(255,255,255,.3);">
+
                 <p><b>🎯 NHIỆM VỤ</b></p>
                 <p>{card['task']}</p>
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("Rút thẻ khác"):
-                st.session_state.active_card = random.choice(deck_library[category])
+            if st.button(
+                "🔄 RÚT THẺ KHÁC",
+                key="draw_another_card"
+            ):
+                st.session_state.active_card = random.choice(
+                    deck_library[category]
+                )
+                st.session_state.active_category = category
                 st.rerun()
 
         else:
-            st.info("Chọn nhóm thẻ và nhấn nút rút thẻ để bắt đầu.")
+            st.info(
+                "Chọn nhóm thẻ và nhấn **Rút một lá thẻ** để bắt đầu."
+            )
 
-        st.caption("Bộ trò chơi chính thức của CHẠM gồm 132 thẻ thuộc 8 nhóm.")
+        st.caption(
+            "Bộ trò chơi vật lý CHẠM gồm 132 thẻ thuộc 8 nhóm. "
+            "Thư viện trên nền tảng hiện là bộ dữ liệu minh họa."
+        )
 
-    with tab2:
+    # ========================================================
+    # 2. MINI-GAME
+    # ========================================================
+
+    elif experience_area == "🎮 Mini-game":
 
         st.subheader("🎮 Thử thách xử lý tình huống")
+
+        st.write(
+            "Đọc tình huống, chọn cách ứng xử bạn cho là phù hợp nhất "
+            "và nhấn **Xác nhận lựa chọn** để nhận phản hồi."
+        )
 
         questions = [
             {
                 "title": "Thử thách 1 – Câu hỏi lặp lại",
-                "question": "Mẹ hỏi đi hỏi lại: “Mấy giờ rồi con?” Bạn nên làm gì?",
+                "question": (
+                    "Mẹ hỏi đi hỏi lại: “Mấy giờ rồi con?” "
+                    "Bạn nên làm gì?"
+                ),
                 "options": [
                     "A. Quát lên vì đã trả lời nhiều lần.",
                     "B. Kiên nhẫn trả lời và dùng đồng hồ dễ nhìn để hỗ trợ.",
                     "C. Phớt lờ câu hỏi."
                 ],
                 "correct": 1,
-                "explain": "Người mắc Alzheimer có thể không nhớ câu trả lời trước đó. Trả lời nhẹ nhàng và dùng công cụ trực quan có thể hỗ trợ họ."
+                "explain": (
+                    "Người mắc Alzheimer có thể không nhớ câu trả lời "
+                    "trước đó. Trả lời nhẹ nhàng và dùng công cụ trực quan "
+                    "có thể hỗ trợ họ."
+                )
             },
             {
                 "title": "Thử thách 2 – Cáo buộc mất đồ",
-                "question": "Bố cho rằng bạn đã lấy chiếc kính của ông. Bạn nên làm gì?",
+                "question": (
+                    "Bố cho rằng bạn đã lấy chiếc kính của ông. "
+                    "Bạn nên làm gì?"
+                ),
                 "options": [
                     "A. Cãi lý để chứng minh mình không lấy.",
                     "B. Chê trách vì bố không nhớ.",
                     "C. Lắng nghe, trấn an và cùng bố tìm chiếc kính."
                 ],
                 "correct": 2,
-                "explain": "Lắng nghe cảm xúc và cùng tìm kiếm có thể giảm căng thẳng hơn là tranh luận đúng sai."
+                "explain": (
+                    "Lắng nghe cảm xúc và cùng tìm kiếm có thể giảm "
+                    "căng thẳng hơn là tranh luận đúng sai."
+                )
             },
             {
                 "title": "Thử thách 3 – Bối rối vào chiều tối",
-                "question": "Mẹ muốn ra ngoài tìm một nơi ở cũ. Bạn nên làm gì?",
+                "question": (
+                    "Mẹ muốn ra ngoài tìm một nơi ở cũ. "
+                    "Bạn nên làm gì?"
+                ),
                 "options": [
                     "A. Quát mắng và bắt mẹ ngồi yên.",
                     "B. Bỏ mặc mẹ tự đi.",
                     "C. Bình tĩnh trò chuyện, tìm hiểu nhu cầu và đảm bảo an toàn."
                 ],
                 "correct": 2,
-                "explain": "Cần chú ý cảm xúc, nhu cầu và nguy cơ an toàn. Không nên bỏ mặc hoặc dùng cách ép buộc."
+                "explain": (
+                    "Cần chú ý cảm xúc, nhu cầu và nguy cơ an toàn. "
+                    "Không nên bỏ mặc hoặc dùng cách ép buộc."
+                )
             },
             {
                 "title": "Thử thách 4 – Từ chối tắm",
-                "question": "Người thân không muốn tắm vì cảm thấy lo lắng. Bạn nên làm gì?",
+                "question": (
+                    "Người thân không muốn tắm vì cảm thấy lo lắng. "
+                    "Bạn nên làm gì?"
+                ),
                 "options": [
                     "A. Ép buộc để hoàn thành việc tắm.",
                     "B. Tìm hiểu nguyên nhân, giải thích từng bước và tôn trọng lựa chọn.",
                     "C. Quát mắng vì người thân không hợp tác."
                 ],
                 "correct": 1,
-                "explain": "Tìm hiểu nguyên nhân và hỗ trợ từng bước có thể giúp người bệnh cảm thấy an toàn, được tôn trọng."
+                "explain": (
+                    "Tìm hiểu nguyên nhân và hỗ trợ từng bước có thể "
+                    "giúp người bệnh cảm thấy an toàn, được tôn trọng."
+                )
             }
         ]
 
+        # Chọn câu hỏi
         game_choice = st.selectbox(
             "Chọn thử thách:",
-            [q["title"] for q in questions]
+            [q["title"] for q in questions],
+            key="minigame_question"
         )
 
-        q = next(x for x in questions if x["title"] == game_choice)
+        question_key = next(
+            i for i, item in enumerate(questions)
+            if item["title"] == game_choice
+        )
 
+        q = questions[question_key]
+
+        # Hiển thị tình huống
         st.markdown(f"""
         <div class="info-card">
-            <div class="section-label">TÌNH HUỐNG THỬ THÁCH</div>
+            <div class="section-label">
+                TÌNH HUỐNG THỬ THÁCH {question_key + 1}/4
+            </div>
             <h3>{q['title']}</h3>
-            <p style="font-size:18px;">{q['question']}</p>
+            <p style="font-size:18px;line-height:1.7;">
+                {q['question']}
+            </p>
         </div>
         """, unsafe_allow_html=True)
+
+        # Mỗi lần làm mới sẽ có một bộ khóa mới cho lựa chọn
+        answer_widget_key = (
+            f"minigame_answer_{question_key}_"
+            f"{st.session_state.game_round}"
+        )
 
         user_answer = st.radio(
             "Lựa chọn của bạn:",
             q["options"],
-            key="answer_" + str(questions.index(q))
+            key=answer_widget_key
         )
 
-        question_key = questions.index(q)
+        # Xác nhận đáp án
+        if st.button(
+            "✅ XÁC NHẬN LỰA CHỌN",
+            type="primary",
+            use_container_width=True,
+            key=f"check_answer_{question_key}"
+        ):
 
-        if st.button("XÁC NHẬN LỰA CHỌN", type="primary"):
+            selected_index = q["options"].index(user_answer)
 
-            if question_key not in st.session_state.answered:
-                selected_index = q["options"].index(user_answer)
+            if selected_index == q["correct"]:
 
-                if selected_index == q["correct"]:
+                # Chỉ cộng điểm một lần cho mỗi câu
+                if not st.session_state.answered.get(
+                    question_key, False
+                ):
                     st.session_state.score += 1
                     st.session_state.answered[question_key] = True
-                    st.success("🌿 Bạn đã chọn một cách ứng xử phù hợp!")
-                    st.balloons()
-                else:
-                    st.session_state.answered[question_key] = False
-                    st.warning("Hãy suy nghĩ thêm về cảm xúc và nhu cầu của người trong tình huống.")
+
+                st.session_state.game_feedback[question_key] = (
+                    "correct",
+                    q["explain"]
+                )
 
             else:
-                selected_index = q["options"].index(user_answer)
 
-                if selected_index == q["correct"]:
-                    st.success("Bạn đã chọn đúng phương án.")
-                else:
-                    st.info("Bạn có thể thử lại để tìm phương án phù hợp hơn.")
+                # Trả lời sai vẫn được thử lại
+                st.session_state.game_feedback[question_key] = (
+                    "retry",
+                    q["explain"]
+                )
 
-            st.info(q["explain"])
+        # Hiển thị phản hồi sau khi xác nhận
+        feedback = st.session_state.game_feedback.get(
+            question_key
+        )
+
+        if feedback:
+
+            if feedback[0] == "correct":
+                st.success(
+                    "🌿 Chính xác! Bạn đã chọn cách ứng xử phù hợp."
+                )
+            else:
+                st.warning(
+                    "Bạn chưa chọn đúng. Hãy suy nghĩ thêm "
+                    "và thử lại nhé."
+                )
+
+            st.info(feedback[1])
+
+        # Trạng thái hoàn thành câu hỏi
+        if st.session_state.answered.get(question_key, False):
+            st.caption(
+                "✓ Bạn đã hoàn thành thử thách này. "
+                "Điểm của câu hỏi chỉ được tính một lần."
+            )
+
+        # ====================================================
+        # BẢNG ĐIỂM VÀ TIẾN ĐỘ
+        # ====================================================
 
         st.divider()
+        st.subheader("📊 Kết quả hành trình")
 
         score = st.session_state.score
 
-        st.metric("Số thử thách trả lời đúng", f"{score}/4")
+        completed = sum(
+            1 for value in st.session_state.answered.values()
+            if value
+        )
+
+        metric1, metric2 = st.columns(2)
+
+        metric1.metric(
+            "Số thử thách trả lời đúng",
+            f"{score}/4"
+        )
+
+        metric2.metric(
+            "Thử thách đã hoàn thành",
+            f"{completed}/4"
+        )
 
         st.progress(min(score / 4, 1.0))
 
         if score >= 4:
             st.session_state.badge_unlocked = True
-            st.success("🏅 Bạn đã mở khóa danh hiệu: ĐẠI SỨ THẤU CẢM!")
 
-        if st.button("Làm mới hành trình thử thách"):
+            st.success(
+                "🏅 Bạn đã mở khóa danh hiệu: ĐẠI SỨ THẤU CẢM!"
+            )
+
+            st.balloons()
+
+        # Làm mới toàn bộ hành trình
+        if st.button(
+            "↻ LÀM MỚI HÀNH TRÌNH THỬ THÁCH",
+            key="reset_minigame"
+        ):
+
             st.session_state.score = 0
             st.session_state.answered = {}
+            st.session_state.game_feedback = {}
             st.session_state.badge_unlocked = False
+
+            # Tạo khóa widget mới để xóa lựa chọn cũ
+            st.session_state.game_round += 1
+
             st.rerun()
 
-    with tab3:
+    # ========================================================
+    # 3. HÀNH TRÌNH THẤU CẢM
+    # ========================================================
+
+    elif experience_area == "🏅 Hành trình thấu cảm":
 
         st.subheader("🏅 Hành trình Đại sứ Thấu cảm")
 
@@ -823,13 +1015,30 @@ elif selected_page == "🎲 Trải nghiệm tương tác":
         )
 
         milestones = [
-            ("🌱", "Bắt đầu thấu hiểu", "Khám phá kiến thức cơ bản về Alzheimer."),
-            ("🫶", "Học cách đồng hành", "Tìm hiểu cách giao tiếp và chăm sóc phù hợp."),
-            ("🤝", "Kết nối yêu thương", "Thực hành các tình huống và lựa chọn ứng xử."),
-            ("🏅", "Đại sứ thấu cảm", "Hoàn thành các thử thách của CHẠM.")
+            (
+                "🌱",
+                "Bắt đầu thấu hiểu",
+                "Khám phá kiến thức cơ bản về Alzheimer."
+            ),
+            (
+                "🫶",
+                "Học cách đồng hành",
+                "Tìm hiểu cách giao tiếp và chăm sóc phù hợp."
+            ),
+            (
+                "🤝",
+                "Kết nối yêu thương",
+                "Thực hành các tình huống và lựa chọn ứng xử."
+            ),
+            (
+                "🏅",
+                "Đại sứ thấu cảm",
+                "Hoàn thành các thử thách của CHẠM."
+            )
         ]
 
         for icon, title, desc in milestones:
+
             st.markdown(f"""
             <div class="info-card">
                 <h3>{icon} {title}</h3>
@@ -837,13 +1046,54 @@ elif selected_page == "🎲 Trải nghiệm tương tác":
             </div>
             """, unsafe_allow_html=True)
 
-        st.metric("Điểm thử thách hiện tại", st.session_state.score)
+        current_score = st.session_state.score
+
+        completed = sum(
+            1 for value in st.session_state.answered.values()
+            if value
+        )
+
+        st.divider()
+        st.subheader("Tiến độ của bạn")
+
+        st.metric(
+            "Điểm thử thách hiện tại",
+            f"{current_score}/4"
+        )
+
+        st.progress(min(current_score / 4, 1.0))
+
+        st.write(
+            f"Bạn đã hoàn thành **{completed}/4 thử thách**."
+        )
+
+        if current_score >= 4:
+            st.session_state.badge_unlocked = True
 
         if st.session_state.badge_unlocked:
-            st.success("Bạn đã hoàn thành hành trình thử thách mẫu!")
-        else:
-            st.info("Tiếp tục trải nghiệm mini-game để hoàn thành hành trình.")
 
+            st.success(
+                "🏅 Chúc mừng! Bạn đã hoàn thành hành trình "
+                "thử thách mẫu – ĐẠI SỨ THẤU CẢM."
+            )
+
+        else:
+
+            st.info(
+                "Tiếp tục Mini-game để hoàn thành các thử thách "
+                "và mở khóa danh hiệu Đại sứ Thấu cảm."
+            )
+
+        if st.button(
+            "🎮 ĐẾN MINI-GAME",
+            key="go_to_minigame"
+        ):
+            st.session_state.experience_area = "🎮 Mini-game"
+            st.rerun()
+
+
+'''
+print("Replacement module prepared.")
 
 # ============================================================
 # MODULE 4 – KHÔNG GIAN SẺ CHIA
